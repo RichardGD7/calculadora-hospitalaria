@@ -22,7 +22,7 @@ COLORS = {
 
 # Configuración de la página
 st.set_page_config(
-    page_title="Sanoviv - Optimización de Pacientes",
+    page_title="Sanoviv - Patient Optimization",
     page_icon="🏥",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -179,11 +179,11 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-# === HEADER PRINCIPAL ===
+# === MAIN HEADER ===
 st.markdown("""
 <div class="main-header">
-    <h1>Sanoviv - Optimización de Capacidad</h1>
-    <p>Sistema de planificación de pacientes por programa de tratamiento</p>
+    <h1>Sanoviv - Capacity Optimization</h1>
+    <p>Patient planning system by treatment program</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -213,7 +213,7 @@ if "editor_pacientes" in st.session_state:
         st.session_state.resultados = None
 
 # === PESTAÑAS ===
-tab1, tab2, tab3, tab4 = st.tabs(["📊 Resumen Ejecutivo", "👥 Pacientes", "📈 Recursos", "🔍 Verificar Admisión"])
+tab1, tab2, tab3, tab4 = st.tabs(["📊 Executive Summary", "👥 Patients", "📈 Resources", "🔍 Verify Admission"])
 
 # =====================================================
 # TAB 1: RESUMEN EJECUTIVO
@@ -233,7 +233,7 @@ with tab1:
         with col1:
             st.markdown(f"""
             <div class="metric-card primary">
-                <div class="metric-label">Pacientes Actuales</div>
+                <div class="metric-label">Current Patients</div>
                 <div class="metric-value">{total_actuales}</div>
             </div>
             """, unsafe_allow_html=True)
@@ -241,7 +241,7 @@ with tab1:
         with col2:
             st.markdown(f"""
             <div class="metric-card">
-                <div class="metric-label">Capacidad Adicional</div>
+                <div class="metric-label">Additional Capacity</div>
                 <div class="metric-value accent">+{total_adicionales}</div>
             </div>
             """, unsafe_allow_html=True)
@@ -249,7 +249,7 @@ with tab1:
         with col3:
             st.markdown(f"""
             <div class="metric-card success">
-                <div class="metric-label">Total Proyectado</div>
+                <div class="metric-label">Projected Total</div>
                 <div class="metric-value">{total_proyectado}</div>
             </div>
             """, unsafe_allow_html=True)
@@ -257,7 +257,7 @@ with tab1:
         with col4:
             st.markdown(f"""
             <div class="metric-card">
-                <div class="metric-label">Valor Ponderado</div>
+                <div class="metric-label">Weighted Value</div>
                 <div class="metric-value">{resultados['total_ponderado']:.1f}</div>
             </div>
             """, unsafe_allow_html=True)
@@ -275,13 +275,13 @@ with tab1:
                 <div style="display: flex; align-items: flex-start; gap: 12px;">
                     <span style="font-size: 1.75rem;">⚠️</span>
                     <div>
-                        <strong style="color: #92400E; font-size: 1.1rem;">Advertencia: Resultados con recursos excedidos</strong><br>
+                        <strong style="color: #92400E; font-size: 1.1rem;">Warning: Results with exceeded resources</strong><br>
                         <span style="color: #78350F; font-size: 0.95rem;">
-                            Hay <strong>{num_excedidos} recurso(s)</strong> que ya exceden su capacidad con los pacientes actuales:
+                            There are <strong>{num_excedidos} resource(s)</strong> already exceeding their capacity with current patients:
                             <em>{nombres_excedidos}</em>.<br>
-                            Estos recursos fueron <strong>excluidos del modelo de optimización</strong>.
-                            Los pacientes adicionales sugeridos podrían empeorar aún más esta situación.
-                            <strong>Se recomienda resolver primero la sobresaturación actual.</strong>
+                            These resources were <strong>excluded from the optimization model</strong>.
+                            The suggested additional patients could worsen this situation further.
+                            <strong>It is recommended to resolve the current oversaturation first.</strong>
                         </span>
                     </div>
                 </div>
@@ -292,31 +292,31 @@ with tab1:
         col_chart1, col_chart2 = st.columns(2)
 
         with col_chart1:
-            st.markdown('<div class="section-header">Pacientes por Programa</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-header">Patients by Program</div>', unsafe_allow_html=True)
 
             # Gráfico de barras comparativo - ordenado por total de mayor a menor
             df_chart = pd.DataFrame({
-                "Programa": resultados["nombre_programas"],
-                "Actuales": st.session_state.pacientes_actuales,
-                "Adicionales": resultados["pacientes_adicionales"],
+                "Program": resultados["nombre_programas"],
+                "Current": st.session_state.pacientes_actuales,
+                "Additional": resultados["pacientes_adicionales"],
             })
-            df_chart["Total"] = df_chart["Actuales"] + df_chart["Adicionales"]
+            df_chart["Total"] = df_chart["Current"] + df_chart["Additional"]
             df_chart = df_chart.sort_values("Total", ascending=True)  # ascending=True para que el mayor quede arriba en barras horizontales
 
             fig_bar = go.Figure()
 
             fig_bar.add_trace(go.Bar(
-                name="Actuales",
-                y=df_chart["Programa"],
-                x=df_chart["Actuales"],
+                name="Current",
+                y=df_chart["Program"],
+                x=df_chart["Current"],
                 orientation="h",
                 marker_color=COLORS["primary"],
             ))
 
             fig_bar.add_trace(go.Bar(
-                name="Adicionales",
-                y=df_chart["Programa"],
-                x=df_chart["Adicionales"],
+                name="Additional",
+                y=df_chart["Program"],
+                x=df_chart["Additional"],
                 orientation="h",
                 marker_color=COLORS["accent"],
             ))
@@ -332,7 +332,7 @@ with tab1:
                     xanchor="right",
                     x=1
                 ),
-                xaxis_title="Pacientes",
+                xaxis_title="Patients",
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
             )
@@ -340,7 +340,7 @@ with tab1:
             st.plotly_chart(fig_bar, use_container_width=True)
 
         with col_chart2:
-            st.markdown('<div class="section-header">Utilización de Recursos</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-header">Resource Utilization</div>', unsafe_allow_html=True)
 
             # Calcular categorías de utilización por tipo de recurso
             tabla_recursos = resultados["tabla_recursos"]
@@ -358,7 +358,7 @@ with tab1:
                     alto_prof = sum(1 for r in rec_prof if r["pct_total"] >= 80)
 
                     fig_donut_prof = go.Figure(data=[go.Pie(
-                        labels=["Bajo (<50%)", "Medio (50-80%)", "Alto (>80%)"],
+                        labels=["Low (<50%)", "Medium (50-80%)", "High (>80%)"],
                         values=[bajo_prof, medio_prof, alto_prof],
                         hole=0.65,
                         marker_colors=[COLORS["success"], COLORS["warning"], COLORS["accent"]],
@@ -381,7 +381,7 @@ with tab1:
                     )
 
                     st.plotly_chart(fig_donut_prof, use_container_width=True)
-                    st.caption("👤 Recursos Profesionales")
+                    st.caption("👤 Professional Resources")
 
                 # Donut de Recursos Físicos
                 with col_donut2:
@@ -390,7 +390,7 @@ with tab1:
                     alto_fis = sum(1 for r in rec_fis if r["pct_total"] >= 80)
 
                     fig_donut_fis = go.Figure(data=[go.Pie(
-                        labels=["Bajo (<50%)", "Medio (50-80%)", "Alto (>80%)"],
+                        labels=["Low (<50%)", "Medium (50-80%)", "High (>80%)"],
                         values=[bajo_fis, medio_fis, alto_fis],
                         hole=0.65,
                         marker_colors=[COLORS["success"], COLORS["warning"], COLORS["accent"]],
@@ -404,7 +404,7 @@ with tab1:
                         showlegend=False,
                         paper_bgcolor="rgba(0,0,0,0)",
                         annotations=[dict(
-                            text=f"<b>{len(rec_fis)}</b><br>Físicos",
+                            text=f"<b>{len(rec_fis)}</b><br>Physical",
                             x=0.5, y=0.5,
                             font_size=14,
                             showarrow=False,
@@ -413,48 +413,48 @@ with tab1:
                     )
 
                     st.plotly_chart(fig_donut_fis, use_container_width=True)
-                    st.caption("🏥 Recursos Físicos")
+                    st.caption("🏥 Physical Resources")
 
                 # Leyenda compartida
                 text_muted = COLORS["text_muted"]
                 st.markdown(
                     f"<div style='text-align:center; font-size:0.8rem; color:{text_muted};'>"
-                    "🟢 Bajo (&lt;50%) &nbsp; 🟡 Medio (50-80%) &nbsp; 🔴 Alto (&gt;80%)</div>",
+                    "🟢 Low (&lt;50%) &nbsp; 🟡 Medium (50-80%) &nbsp; 🔴 High (&gt;80%)</div>",
                     unsafe_allow_html=True
                 )
             else:
-                st.info("Ejecuta la optimización para ver la utilización de recursos.")
+                st.info("Run the optimization to see resource utilization.")
 
         # Gráfico de Top 10 Recursos Más Utilizados
         if tabla_recursos:
-            st.markdown('<div class="section-header">Top 10 Recursos Más Utilizados</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-header">Top 10 Most Utilized Resources</div>', unsafe_allow_html=True)
 
             # Preparar datos para el gráfico
             tabla_data_top = []
             for rec in tabla_recursos:
                 tabla_data_top.append({
-                    "Recurso": rec["nombre"],
-                    "Uso Actual (%)": rec["pct_actual"],
-                    "Uso Total (%)": rec["pct_total"],
+                    "Resource": rec["nombre"],
+                    "Current Usage (%)": rec["pct_actual"],
+                    "Total Usage (%)": rec["pct_total"],
                 })
 
-            df_top = pd.DataFrame(tabla_data_top).nlargest(10, "Uso Total (%)")
-            df_top = df_top.sort_values("Uso Total (%)", ascending=True)  # Para que el mayor quede arriba
+            df_top = pd.DataFrame(tabla_data_top).nlargest(10, "Total Usage (%)")
+            df_top = df_top.sort_values("Total Usage (%)", ascending=True)  # Para que el mayor quede arriba
 
             fig_top = go.Figure()
 
             fig_top.add_trace(go.Bar(
-                y=df_top["Recurso"],
-                x=df_top["Uso Actual (%)"],
-                name="Uso Actual",
+                y=df_top["Resource"],
+                x=df_top["Current Usage (%)"],
+                name="Current Usage",
                 orientation="h",
                 marker_color=COLORS["primary"],
             ))
 
             fig_top.add_trace(go.Bar(
-                y=df_top["Recurso"],
-                x=df_top["Uso Total (%)"] - df_top["Uso Actual (%)"],
-                name="Uso Adicional",
+                y=df_top["Resource"],
+                x=df_top["Total Usage (%)"] - df_top["Current Usage (%)"],
+                name="Additional Usage",
                 orientation="h",
                 marker_color=COLORS["accent"],
             ))
@@ -470,24 +470,24 @@ with tab1:
                     xanchor="right",
                     x=1
                 ),
-                xaxis_title="Utilización (%)",
+                xaxis_title="Utilization (%)",
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
             )
 
             # Línea de referencia al 100%
-            fig_top.add_vline(x=100, line_dash="dash", line_color=COLORS["danger"], annotation_text="Capacidad máxima")
+            fig_top.add_vline(x=100, line_dash="dash", line_color=COLORS["danger"], annotation_text="Maximum capacity")
 
             st.plotly_chart(fig_top, use_container_width=True)
 
         # Alertas de recursos excedidos
         if resultados["recursos_excedidos"]:
-            st.markdown('<div class="section-header">⚠️ Alertas de Capacidad</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-header">⚠️ Capacity Alerts</div>', unsafe_allow_html=True)
             for rec in resultados["recursos_excedidos"]:
                 st.markdown(f"""
                 <div class="resource-alert">
-                    <strong>{rec['nombre']}</strong>: excedido por {rec['excedente']:.1f}h
-                    (uso: {rec['uso_actual']:.1f}h / capacidad: {rec['capacidad']:.1f}h)
+                    <strong>{rec['nombre']}</strong>: exceeded by {rec['excedente']:.1f}h
+                    (usage: {rec['uso_actual']:.1f}h / capacity: {rec['capacidad']:.1f}h)
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -498,7 +498,7 @@ with tab1:
         with col1:
             st.markdown(f"""
             <div class="metric-card primary">
-                <div class="metric-label">Pacientes Actuales</div>
+                <div class="metric-label">Current Patients</div>
                 <div class="metric-value">{total_actuales}</div>
             </div>
             """, unsafe_allow_html=True)
@@ -506,49 +506,49 @@ with tab1:
         with col2:
             st.markdown("""
             <div class="metric-card">
-                <div class="metric-label">Capacidad Adicional</div>
+                <div class="metric-label">Additional Capacity</div>
                 <div class="metric-value" style="color: #94A3B8;">—</div>
             </div>
             """, unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
-        st.info("👆 Ve a la pestaña **Pacientes** para ajustar los valores y ejecutar la optimización.")
+        st.info("👆 Go to the **Patients** tab to adjust values and run the optimization.")
 
 # =====================================================
 # TAB 2: PACIENTES
 # =====================================================
 with tab2:
-    st.markdown('<div class="section-header">Configuración de Pacientes Actuales</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">Current Patients Configuration</div>', unsafe_allow_html=True)
 
     # Crear DataFrame para edición
     df_pacientes = pd.DataFrame({
-        "Programa": datos_base["nombre_programas"],
-        "Pacientes Actuales": st.session_state.pacientes_actuales,
-        "Prioridad": datos_base["prioridad_programas"],
+        "Program": datos_base["nombre_programas"],
+        "Current Patients": st.session_state.pacientes_actuales,
+        "Priority": datos_base["prioridad_programas"],
     })
 
     # Editor de datos
     df_editado = st.data_editor(
         df_pacientes,
         column_config={
-            "Programa": st.column_config.TextColumn(
-                "Programa de Tratamiento",
+            "Program": st.column_config.TextColumn(
+                "Treatment Program",
                 disabled=True,
                 width="large",
             ),
-            "Pacientes Actuales": st.column_config.NumberColumn(
-                "Pacientes Actuales",
+            "Current Patients": st.column_config.NumberColumn(
+                "Current Patients",
                 min_value=0,
                 max_value=100,
                 step=1,
                 format="%d",
-                help="Número de pacientes actualmente en el programa",
+                help="Number of patients currently in the program",
             ),
-            "Prioridad": st.column_config.NumberColumn(
-                "Prioridad",
+            "Priority": st.column_config.NumberColumn(
+                "Priority",
                 disabled=True,
                 format="%.2f",
-                help="Peso de prioridad del programa (mayor = más importante)",
+                help="Program priority weight (higher = more important)",
             ),
         },
         hide_index=True,
@@ -557,7 +557,7 @@ with tab2:
     )
 
     # Actualizar estado con los valores editados (solo si cambió)
-    nuevos_valores = df_editado["Pacientes Actuales"].tolist()
+    nuevos_valores = df_editado["Current Patients"].tolist()
     if nuevos_valores != st.session_state.pacientes_actuales:
         st.session_state.pacientes_actuales = nuevos_valores
         # Limpiar resultados anteriores ya que los datos cambiaron
@@ -569,19 +569,19 @@ with tab2:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         calcular = st.button(
-            "🔄 Calcular Optimización",
+            "🔄 Calculate Optimization",
             type="primary",
             use_container_width=True,
         )
 
     if calcular:
-        with st.spinner("Ejecutando modelo de optimización..."):
+        with st.spinner("Running optimization model..."):
             try:
                 st.session_state.resultados = ejecutar_optimizacion(st.session_state.pacientes_actuales)
-                st.success("✅ Optimización completada. Ve a **Resumen Ejecutivo** para ver los resultados.")
+                st.success("✅ Optimization completed. Go to **Executive Summary** to see the results.")
                 st.rerun()
             except Exception as e:
-                st.error(f"❌ Error al ejecutar la optimización: {str(e)}")
+                st.error(f"❌ Error running the optimization: {str(e)}")
                 st.session_state.resultados = None
 
     # Mostrar resultados de pacientes adicionales si existen
@@ -598,29 +598,29 @@ with tab2:
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <span style="font-size: 1.5rem;">⚠️</span>
                     <span style="color: #78350F;">
-                        <strong>Atención:</strong> Hay {num_excedidos} recurso(s) excedido(s) que fueron excluidos del modelo.
-                        Los resultados podrían no ser confiables. Ver pestaña <strong>Recursos</strong> para más detalles.
+                        <strong>Attention:</strong> There are {num_excedidos} exceeded resource(s) that were excluded from the model.
+                        Results may not be reliable. See the <strong>Resources</strong> tab for more details.
                     </span>
                 </div>
             </div>
             """, unsafe_allow_html=True)
 
-        st.markdown('<div class="section-header">Resultados: Pacientes Adicionales</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">Results: Additional Patients</div>', unsafe_allow_html=True)
 
         df_resultado = pd.DataFrame({
-            "Programa": resultados["nombre_programas"],
-            "Actuales": st.session_state.pacientes_actuales,
-            "Adicionales": resultados["pacientes_adicionales"],
+            "Program": resultados["nombre_programas"],
+            "Current": st.session_state.pacientes_actuales,
+            "Additional": resultados["pacientes_adicionales"],
             "Total": [a + b for a, b in zip(st.session_state.pacientes_actuales, resultados["pacientes_adicionales"])],
         })
 
         st.dataframe(
             df_resultado,
             column_config={
-                "Programa": st.column_config.TextColumn("Programa", width="large"),
-                "Actuales": st.column_config.NumberColumn("Actuales", format="%d"),
-                "Adicionales": st.column_config.NumberColumn("Adicionales", format="%d"),
-                "Total": st.column_config.NumberColumn("Total Proyectado", format="%d"),
+                "Program": st.column_config.TextColumn("Program", width="large"),
+                "Current": st.column_config.NumberColumn("Current", format="%d"),
+                "Additional": st.column_config.NumberColumn("Additional", format="%d"),
+                "Total": st.column_config.NumberColumn("Projected Total", format="%d"),
             },
             hide_index=True,
             use_container_width=True,
@@ -634,7 +634,7 @@ with tab3:
     total_pacientes_actuales = sum(st.session_state.pacientes_actuales)
     st.markdown(f"""
     <div class="metric-card primary" style="margin-bottom: 1.5rem;">
-        <div class="metric-label">Total Pacientes Actuales</div>
+        <div class="metric-label">Total Current Patients</div>
         <div class="metric-value">{total_pacientes_actuales}</div>
     </div>
     """, unsafe_allow_html=True)
@@ -642,22 +642,22 @@ with tab3:
     if st.session_state.resultados is not None and st.session_state.resultados["estado"] == "Optimal":
         resultados = st.session_state.resultados
 
-        st.markdown('<div class="section-header">Detalle de Utilización de Recursos</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">Resource Utilization Detail</div>', unsafe_allow_html=True)
 
         if resultados["tabla_recursos"]:
             # Preparar datos para la tabla
             tabla_data = []
             for rec in resultados["tabla_recursos"]:
-                estado = "✅ OK" if rec["ok"] else "⛔ Excedido"
+                estado = "✅ OK" if rec["ok"] else "⛔ Exceeded"
                 tabla_data.append({
-                    "Recurso": rec["nombre"],
-                    "Capacidad (h)": rec["capacidad"],
-                    "Uso Actual (h)": rec["uso_actual"],
-                    "Uso Actual (%)": rec["pct_actual"],
-                    "Uso Adicional (h)": rec["uso_adicional"],
-                    "Uso Total (h)": rec["uso_total"],
-                    "Uso Total (%)": rec["pct_total"],
-                    "Estado": estado,
+                    "Resource": rec["nombre"],
+                    "Capacity (h)": rec["capacidad"],
+                    "Current Usage (h)": rec["uso_actual"],
+                    "Current Usage (%)": rec["pct_actual"],
+                    "Additional Usage (h)": rec["uso_adicional"],
+                    "Total Usage (h)": rec["uso_total"],
+                    "Total Usage (%)": rec["pct_total"],
+                    "Status": estado,
                 })
 
             df_recursos = pd.DataFrame(tabla_data)
@@ -666,39 +666,39 @@ with tab3:
             col_filter1, col_filter2 = st.columns(2)
             with col_filter1:
                 filtro_uso = st.selectbox(
-                    "Filtrar por nivel de uso:",
-                    ["Todos", "Alto (>80%)", "Medio (50-80%)", "Bajo (<50%)"],
+                    "Filter by usage level:",
+                    ["All", "High (>80%)", "Medium (50-80%)", "Low (<50%)"],
                 )
 
             # Aplicar filtro
-            if filtro_uso == "Alto (>80%)":
-                df_recursos = df_recursos[df_recursos["Uso Total (%)"] >= 80]
-            elif filtro_uso == "Medio (50-80%)":
-                df_recursos = df_recursos[(df_recursos["Uso Total (%)"] >= 50) & (df_recursos["Uso Total (%)"] < 80)]
-            elif filtro_uso == "Bajo (<50%)":
-                df_recursos = df_recursos[df_recursos["Uso Total (%)"] < 50]
+            if filtro_uso == "High (>80%)":
+                df_recursos = df_recursos[df_recursos["Total Usage (%)"] >= 80]
+            elif filtro_uso == "Medium (50-80%)":
+                df_recursos = df_recursos[(df_recursos["Total Usage (%)"] >= 50) & (df_recursos["Total Usage (%)"] < 80)]
+            elif filtro_uso == "Low (<50%)":
+                df_recursos = df_recursos[df_recursos["Total Usage (%)"] < 50]
 
             st.dataframe(
                 df_recursos,
                 column_config={
-                    "Recurso": st.column_config.TextColumn("Recurso", width="medium"),
-                    "Capacidad (h)": st.column_config.NumberColumn("Capacidad", format="%.1f"),
-                    "Uso Actual (h)": st.column_config.NumberColumn("Uso Actual", format="%.1f"),
-                    "Uso Actual (%)": st.column_config.ProgressColumn(
-                        "% Actual",
+                    "Resource": st.column_config.TextColumn("Resource", width="medium"),
+                    "Capacity (h)": st.column_config.NumberColumn("Capacity", format="%.1f"),
+                    "Current Usage (h)": st.column_config.NumberColumn("Current Usage", format="%.1f"),
+                    "Current Usage (%)": st.column_config.ProgressColumn(
+                        "% Current",
                         min_value=0,
                         max_value=100,
                         format="%.1f%%",
                     ),
-                    "Uso Adicional (h)": st.column_config.NumberColumn("Uso Adic.", format="%.1f"),
-                    "Uso Total (h)": st.column_config.NumberColumn("Uso Total", format="%.1f"),
-                    "Uso Total (%)": st.column_config.ProgressColumn(
+                    "Additional Usage (h)": st.column_config.NumberColumn("Add. Usage", format="%.1f"),
+                    "Total Usage (h)": st.column_config.NumberColumn("Total Usage", format="%.1f"),
+                    "Total Usage (%)": st.column_config.ProgressColumn(
                         "% Total",
                         min_value=0,
                         max_value=100,
                         format="%.1f%%",
                     ),
-                    "Estado": st.column_config.TextColumn("Estado", width="small"),
+                    "Status": st.column_config.TextColumn("Status", width="small"),
                 },
                 hide_index=True,
                 use_container_width=True,
@@ -706,39 +706,39 @@ with tab3:
 
         # Recursos excedidos
         if resultados["recursos_excedidos"]:
-            st.markdown('<div class="section-header">⚠️ Recursos Excedidos (No incluidos en optimización)</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-header">⚠️ Exceeded Resources (Not included in optimization)</div>', unsafe_allow_html=True)
 
             df_excedidos = pd.DataFrame(resultados["recursos_excedidos"])
-            df_excedidos.columns = ["Recurso", "Uso Actual (h)", "Capacidad (h)", "Excedente (h)"]
+            df_excedidos.columns = ["Resource", "Current Usage (h)", "Capacity (h)", "Excess (h)"]
 
             st.dataframe(
                 df_excedidos,
                 column_config={
-                    "Recurso": st.column_config.TextColumn("Recurso", width="medium"),
-                    "Uso Actual (h)": st.column_config.NumberColumn("Uso Actual", format="%.1f"),
-                    "Capacidad (h)": st.column_config.NumberColumn("Capacidad", format="%.1f"),
-                    "Excedente (h)": st.column_config.NumberColumn("Excedente", format="%.1f"),
+                    "Resource": st.column_config.TextColumn("Resource", width="medium"),
+                    "Current Usage (h)": st.column_config.NumberColumn("Current Usage", format="%.1f"),
+                    "Capacity (h)": st.column_config.NumberColumn("Capacity", format="%.1f"),
+                    "Excess (h)": st.column_config.NumberColumn("Excess", format="%.1f"),
                 },
                 hide_index=True,
                 use_container_width=True,
             )
     else:
-        st.info("👆 Ve a la pestaña **Pacientes** para ejecutar la optimización y ver el detalle de recursos.")
+        st.info("👆 Go to the **Patients** tab to run the optimization and see resource details.")
 
 # =====================================================
 # TAB 4: VERIFICAR ADMISIÓN
 # =====================================================
 with tab4:
-    st.markdown('<div class="section-header">Verificar Factibilidad de Admisión</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">Verify Admission Feasibility</div>', unsafe_allow_html=True)
     st.markdown(
-        "Verifica si es posible admitir un número específico de pacientes nuevos por programa, "
-        "considerando la capacidad actual de recursos."
+        "Verify if it is possible to admit a specific number of new patients per program, "
+        "considering the current resource capacity."
     )
 
     st.markdown("<br>", unsafe_allow_html=True)
 
     # Formulario de solicitudes
-    st.markdown("#### Solicitudes de Admisión")
+    st.markdown("#### Admission Requests")
 
     # Crear columnas para el formulario
     col_form1, col_form2 = st.columns([2, 1])
@@ -746,7 +746,7 @@ with tab4:
     with col_form1:
         # Selector de programa
         programa_seleccionado = st.selectbox(
-            "Seleccionar programa:",
+            "Select program:",
             options=range(len(datos_base["nombre_programas"])),
             format_func=lambda x: datos_base["nombre_programas"][x],
             key="programa_verificar",
@@ -755,7 +755,7 @@ with tab4:
     with col_form2:
         # Cantidad de pacientes
         cantidad_pacientes = st.number_input(
-            "Cantidad de pacientes:",
+            "Number of patients:",
             min_value=1,
             max_value=50,
             value=1,
@@ -771,12 +771,12 @@ with tab4:
     col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 2])
 
     with col_btn1:
-        if st.button("➕ Agregar", use_container_width=True):
+        if st.button("➕ Add", use_container_width=True):
             st.session_state.solicitudes_admision[programa_seleccionado] = cantidad_pacientes
             st.rerun()
 
     with col_btn2:
-        if st.button("🗑️ Limpiar Todo", use_container_width=True):
+        if st.button("🗑️ Clear All", use_container_width=True):
             st.session_state.solicitudes_admision = {}
             st.session_state.resultado_verificacion = None
             st.rerun()
@@ -784,12 +784,12 @@ with tab4:
     # Mostrar solicitudes actuales
     if st.session_state.solicitudes_admision:
         st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("#### Solicitudes Pendientes de Verificar")
+        st.markdown("#### Pending Requests to Verify")
 
         solicitudes_df = pd.DataFrame([
             {
-                "Programa": datos_base["nombre_programas"][idx],
-                "Pacientes Solicitados": cant,
+                "Program": datos_base["nombre_programas"][idx],
+                "Requested Patients": cant,
             }
             for idx, cant in st.session_state.solicitudes_admision.items()
         ])
@@ -797,15 +797,15 @@ with tab4:
         st.dataframe(
             solicitudes_df,
             column_config={
-                "Programa": st.column_config.TextColumn("Programa", width="large"),
-                "Pacientes Solicitados": st.column_config.NumberColumn("Pacientes", format="%d"),
+                "Program": st.column_config.TextColumn("Program", width="large"),
+                "Requested Patients": st.column_config.NumberColumn("Patients", format="%d"),
             },
             hide_index=True,
             use_container_width=True,
         )
 
         total_solicitados = sum(st.session_state.solicitudes_admision.values())
-        st.markdown(f"**Total de pacientes solicitados:** {total_solicitados}")
+        st.markdown(f"**Total requested patients:** {total_solicitados}")
 
         st.markdown("<br>", unsafe_allow_html=True)
 
@@ -813,13 +813,13 @@ with tab4:
         col_ver1, col_ver2, col_ver3 = st.columns([1, 2, 1])
         with col_ver2:
             verificar_btn = st.button(
-                "🔍 Verificar Factibilidad",
+                "🔍 Verify Feasibility",
                 type="primary",
                 use_container_width=True,
             )
 
         if verificar_btn:
-            with st.spinner("Verificando factibilidad..."):
+            with st.spinner("Verifying feasibility..."):
                 try:
                     resultado_verificacion = verificar_admision(
                         st.session_state.pacientes_actuales,
@@ -828,7 +828,7 @@ with tab4:
                     st.session_state.resultado_verificacion = resultado_verificacion
                     st.rerun()
                 except Exception as e:
-                    st.error(f"❌ Error al verificar factibilidad: {str(e)}")
+                    st.error(f"❌ Error verifying feasibility: {str(e)}")
                     st.session_state.resultado_verificacion = None
 
     # Mostrar resultados de verificación
@@ -837,17 +837,17 @@ with tab4:
 
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("---")
-        st.markdown("### Resultado de la Verificación")
+        st.markdown("### Verification Result")
 
         # Mostrar resultado general
         if resultado["factible"]:
-            st.success("✅ **FACTIBLE**: Es posible admitir todos los pacientes solicitados.")
+            st.success("✅ **FEASIBLE**: It is possible to admit all requested patients.")
         else:
-            st.error("❌ **NO FACTIBLE**: No es posible admitir todos los pacientes solicitados con la capacidad actual.")
+            st.error("❌ **NOT FEASIBLE**: It is not possible to admit all requested patients with current capacity.")
 
         # Detalle por solicitud
         st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("#### Detalle por Programa")
+        st.markdown("#### Detail by Program")
 
         for detalle in resultado["solicitudes_detalle"]:
             pacientes_actuales_programa = st.session_state.pacientes_actuales[detalle["programa_idx"]]
@@ -855,47 +855,47 @@ with tab4:
                 st.markdown(f"""
                 <div style="background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 8px; padding: 1rem; margin: 0.5rem 0;">
                     <strong>✅ {detalle['programa']}</strong><br>
-                    Actuales: {pacientes_actuales_programa} | Solicitados: {detalle['cantidad_solicitada']} | Máximo admisible: {detalle['max_admisible']}
+                    Current: {pacientes_actuales_programa} | Requested: {detalle['cantidad_solicitada']} | Maximum admissible: {detalle['max_admisible']}
                 </div>
                 """, unsafe_allow_html=True)
             else:
                 st.markdown(f"""
                 <div style="background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px; padding: 1rem; margin: 0.5rem 0;">
                     <strong>❌ {detalle['programa']}</strong><br>
-                    Actuales: {pacientes_actuales_programa} | Solicitados: {detalle['cantidad_solicitada']} | Máximo admisible: {detalle['max_admisible']} | Déficit: {detalle['deficit']}<br>
-                    <em>Recurso limitante: {detalle['recurso_limitante']}</em>
+                    Current: {pacientes_actuales_programa} | Requested: {detalle['cantidad_solicitada']} | Maximum admissible: {detalle['max_admisible']} | Deficit: {detalle['deficit']}<br>
+                    <em>Limiting resource: {detalle['recurso_limitante']}</em>
                 </div>
                 """, unsafe_allow_html=True)
 
         # Recursos limitantes (si hay)
         if resultado["recursos_limitantes"]:
             st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown("#### Recursos que Exceden Capacidad")
+            st.markdown("#### Resources Exceeding Capacity")
 
             df_limitantes = pd.DataFrame(resultado["recursos_limitantes"])
             df_limitantes = df_limitantes.rename(columns={
-                "nombre": "Recurso",
-                "tipo": "Tipo",
-                "capacidad": "Capacidad (h)",
-                "uso_actual": "Uso Actual (h)",
-                "uso_adicional_requerido": "Uso Adicional (h)",
-                "uso_total_proyectado": "Uso Total (h)",
-                "excedente": "Excedente (h)",
-                "pct_uso_proyectado": "% Proyectado",
+                "nombre": "Resource",
+                "tipo": "Type",
+                "capacidad": "Capacity (h)",
+                "uso_actual": "Current Usage (h)",
+                "uso_adicional_requerido": "Additional Usage (h)",
+                "uso_total_proyectado": "Total Usage (h)",
+                "excedente": "Excess (h)",
+                "pct_uso_proyectado": "% Projected",
             })
 
             st.dataframe(
                 df_limitantes,
                 column_config={
-                    "Recurso": st.column_config.TextColumn("Recurso", width="medium"),
-                    "Tipo": st.column_config.TextColumn("Tipo", width="small"),
-                    "Capacidad (h)": st.column_config.NumberColumn("Capacidad", format="%.1f"),
-                    "Uso Actual (h)": st.column_config.NumberColumn("Uso Actual", format="%.1f"),
-                    "Uso Adicional (h)": st.column_config.NumberColumn("Uso Adic.", format="%.1f"),
-                    "Uso Total (h)": st.column_config.NumberColumn("Uso Total", format="%.1f"),
-                    "Excedente (h)": st.column_config.NumberColumn("Excedente", format="%.1f"),
-                    "% Proyectado": st.column_config.NumberColumn(
-                        "% Proyectado",
+                    "Resource": st.column_config.TextColumn("Resource", width="medium"),
+                    "Type": st.column_config.TextColumn("Type", width="small"),
+                    "Capacity (h)": st.column_config.NumberColumn("Capacity", format="%.1f"),
+                    "Current Usage (h)": st.column_config.NumberColumn("Current Usage", format="%.1f"),
+                    "Additional Usage (h)": st.column_config.NumberColumn("Add. Usage", format="%.1f"),
+                    "Total Usage (h)": st.column_config.NumberColumn("Total Usage", format="%.1f"),
+                    "Excess (h)": st.column_config.NumberColumn("Excess", format="%.1f"),
+                    "% Projected": st.column_config.NumberColumn(
+                        "% Projected",
                         format="%.1f%% ⚠️",
                     ),
                 },
@@ -906,7 +906,7 @@ with tab4:
         # Impacto en recursos (top 15)
         if resultado["impacto_recursos"]:
             st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown("#### Impacto en Recursos (Top 15 más afectados)")
+            st.markdown("#### Resource Impact (Top 15 most affected)")
 
             df_impacto = pd.DataFrame(resultado["impacto_recursos"][:15])
 
@@ -918,7 +918,7 @@ with tab4:
             fig_impacto.add_trace(go.Bar(
                 y=df_impacto_sorted["nombre"],
                 x=df_impacto_sorted["pct_actual"],
-                name="Uso Actual",
+                name="Current Usage",
                 orientation="h",
                 marker_color=COLORS["primary"],
             ))
@@ -926,7 +926,7 @@ with tab4:
             fig_impacto.add_trace(go.Bar(
                 y=df_impacto_sorted["nombre"],
                 x=df_impacto_sorted["pct_proyectado"] - df_impacto_sorted["pct_actual"],
-                name="Uso Adicional",
+                name="Additional Usage",
                 orientation="h",
                 marker_color=COLORS["accent"],
             ))
@@ -942,25 +942,25 @@ with tab4:
                     xanchor="right",
                     x=1
                 ),
-                xaxis_title="Utilización (%)",
+                xaxis_title="Utilization (%)",
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
             )
 
             # Línea de referencia al 100%
-            fig_impacto.add_vline(x=100, line_dash="dash", line_color=COLORS["danger"], annotation_text="Capacidad máxima")
+            fig_impacto.add_vline(x=100, line_dash="dash", line_color=COLORS["danger"], annotation_text="Maximum capacity")
 
             st.plotly_chart(fig_impacto, use_container_width=True)
 
     else:
         if not st.session_state.solicitudes_admision:
             st.markdown("<br>", unsafe_allow_html=True)
-            st.info("👆 Agrega solicitudes de admisión seleccionando un programa y la cantidad de pacientes, luego haz clic en **Agregar**.")
+            st.info("👆 Add admission requests by selecting a program and the number of patients, then click **Add**.")
 
 # === FOOTER ===
 st.markdown(f"""
 <div class="footer">
     <span class="logo">ARK<span class="dot">●</span>DE</span> × Sanoviv Medical Institute<br>
-    Sistema de Optimización de Capacidad de Pacientes
+    Patient Capacity Optimization System
 </div>
 """, unsafe_allow_html=True)
