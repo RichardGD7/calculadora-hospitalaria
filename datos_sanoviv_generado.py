@@ -31,6 +31,27 @@ prioridad_programas = [
     3.52,  # Microbiome Restore
 ]
 
+# Configuración de Programas Estrella
+# Los programas marcados como True reciben un multiplicador adicional en la optimización
+# para garantizar que sean priorizados sobre otros programas
+programas_estrella = [
+    True,   # Cancer Treatment - PROGRAMA ESTRELLA
+    True,   # Lyme Disease & Co-Infections - PROGRAMA ESTRELLA
+    False,  # Detox and Rejuvenation
+    False,  # Stem Cell Rejuvenation
+    False,  # NeuroFeedback Detox
+    False,  # Medical Treatment
+    False,  # Integrative Physical
+    False,  # Long COVID Treatment
+    False,  # Neuro Cognitive
+    False,  # Mycotoxin Detox
+    False,  # Microbiome Restore
+]
+
+# Multiplicador para programas estrella (valor > 1.0 aumenta la prioridad)
+# Ejemplo: 3.0 significa que los programas estrella valen 3x más en la optimización
+multiplicador_estrella = 3.0
+
 # pacientes_actuales = [13, 9, 3, 0, 0, 9, 7, 0, 1, 0, 0]
 # pacientes_actuales = [12, 8, 0, 2, 0, 2, 2, 0, 0, 0, 0]
 # pacientes_actuales = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]

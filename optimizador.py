@@ -26,6 +26,10 @@ def obtener_datos_base():
     # Número de recursos profesionales para clasificación
     n_profesionales = len(datos.nom_rec_prof)
 
+    # Configuración de programas estrella (con valores por defecto si no existen)
+    programas_estrella = getattr(datos, "programas_estrella", [False] * datos.NO_PROGRAMAS)
+    multiplicador_estrella = getattr(datos, "multiplicador_estrella", 1.0)
+
     return {
         "n_programas": datos.NO_PROGRAMAS,
         "m_recursos": datos.NO_RECURSOS,
@@ -36,6 +40,14 @@ def obtener_datos_base():
         "prioridad_programas": datos.prioridad_programas,
         "capacidades": datos.cap_rec_total,
         "consumo": datos.matriz_consumo_total,
+        # Datos separados para administración
+        "nombre_rec_prof": datos.nom_rec_prof,
+        "nombre_rec_fis": datos.nom_rec_fis,
+        "cap_rec_prof": datos.cap_rec_prof,
+        "cap_rec_fis": datos.cap_rec_fis,
+        # Configuración de programas estrella
+        "programas_estrella": programas_estrella,
+        "multiplicador_estrella": multiplicador_estrella,
     }
 
 
@@ -66,6 +78,18 @@ def ejecutar_optimizacion(pacientes_actuales: list) -> dict:
     prioridad_programas = getattr(datos, "prioridad_programas", [1.0] * n_programas)
     if not isinstance(prioridad_programas, (list, tuple)) or len(prioridad_programas) != n_programas:
         prioridad_programas = [1.0] * n_programas
+
+    # Configuración de programas estrella
+    programas_estrella = getattr(datos, "programas_estrella", [False] * n_programas)
+    if not isinstance(programas_estrella, (list, tuple)) or len(programas_estrella) != n_programas:
+        programas_estrella = [False] * n_programas
+    multiplicador_estrella = getattr(datos, "multiplicador_estrella", 1.0)
+
+    # Calcular prioridades efectivas (aplicando multiplicador a programas estrella)
+    prioridad_efectiva = [
+        prioridad_programas[j] * (multiplicador_estrella if programas_estrella[j] else 1.0)
+        for j in range(n_programas)
+    ]
 
     # Calcular uso actual y clasificar recursos
     uso_actual_por_recurso = []
@@ -119,7 +143,7 @@ def ejecutar_optimizacion(pacientes_actuales: list) -> dict:
     ]
 
     modelo += (
-        lpSum(prioridad_programas[j] * adicionales[j] for j in range(n_programas)),
+        lpSum(prioridad_efectiva[j] * adicionales[j] for j in range(n_programas)),
         "Total_Ponderado_Pacientes_Adicionales",
     )
 
@@ -135,7 +159,7 @@ def ejecutar_optimizacion(pacientes_actuales: list) -> dict:
     # Preparar resultados
     if estado == "Optimal":
         valores = [int(v.value()) for v in adicionales]
-        total_ponderado = sum(prioridad_programas[j] * valores[j] for j in range(n_programas))
+        total_ponderado = sum(prioridad_efectiva[j] * valores[j] for j in range(n_programas))
         total_pacientes = sum(valores)
     else:
         valores = [0] * n_programas

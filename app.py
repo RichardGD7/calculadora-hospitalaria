@@ -5,7 +5,105 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import os
 from optimizador import obtener_datos_base, ejecutar_optimizacion, verificar_admision
+
+
+def guardar_datos_sanoviv(programas_df, recursos_prof_df, recursos_fis_df, multiplicador_estrella=3.0):
+    """Guarda los datos editados en el archivo datos_sanoviv_generado.py"""
+    import datos_sanoviv_generado as datos
+
+    # Obtener ruta del archivo
+    archivo_path = os.path.join(os.path.dirname(__file__), "datos_sanoviv_generado.py")
+
+    # Leer el archivo original para preservar las matrices de consumo
+    with open(archivo_path, "r", encoding="utf-8") as f:
+        contenido_original = f.read()
+
+    # Extraer matrices de consumo del archivo original
+    # Buscar desde "matriz_consumo_prof" hasta el final
+    inicio_matriz = contenido_original.find("# Matriz de consumo de recursos profesionales")
+    matrices_contenido = contenido_original[inicio_matriz:] if inicio_matriz != -1 else ""
+
+    # Construir el nuevo contenido
+    nuevo_contenido = '''# -*- coding: utf-8 -*-
+
+# Programas y pacientes actuales
+orden_programas = [
+'''
+    # Agregar programas
+    for nombre in programas_df["Program"].tolist():
+        nuevo_contenido += f'    "{nombre}",\n'
+    nuevo_contenido += ']\n\n'
+
+    # Agregar prioridades
+    nuevo_contenido += '''# Definición de Prioridades de los Programas
+# Valores más altos = más prioridad. Si no defines esta lista, el modelo usa 1.0 para todos.
+prioridad_programas = [
+'''
+    for i, (_, row) in enumerate(programas_df.iterrows()):
+        nuevo_contenido += f'    {row["Priority"]:.2f},  # {row["Program"]}\n'
+    nuevo_contenido += ']\n\n'
+
+    # Agregar configuración de programas estrella
+    nuevo_contenido += '''# Configuración de Programas Estrella
+# Los programas marcados como True reciben un multiplicador adicional en la optimización
+# para garantizar que sean priorizados sobre otros programas
+programas_estrella = [
+'''
+    for i, (_, row) in enumerate(programas_df.iterrows()):
+        es_estrella = row.get("Star", False)
+        estrella_str = "True" if es_estrella else "False"
+        comentario = " - PROGRAMA ESTRELLA" if es_estrella else ""
+        nuevo_contenido += f'    {estrella_str},  # {row["Program"]}{comentario}\n'
+    nuevo_contenido += ']\n\n'
+
+    # Agregar multiplicador estrella
+    nuevo_contenido += f'''# Multiplicador para programas estrella (valor > 1.0 aumenta la prioridad)
+# Ejemplo: 3.0 significa que los programas estrella valen 3x más en la optimización
+multiplicador_estrella = {multiplicador_estrella:.1f}
+
+'''
+
+    # Agregar pacientes actuales (mantener como ceros)
+    nuevo_contenido += f'pacientes_actuales = {[0] * len(programas_df)}\n\n\n'
+
+    # Agregar recursos profesionales
+    nuevo_contenido += '''# Recursos profesionales y físicos
+nom_rec_prof = [
+'''
+    for nombre in recursos_prof_df["Resource"].tolist():
+        nuevo_contenido += f'    "{nombre}",\n'
+    nuevo_contenido += ']\n'
+
+    nuevo_contenido += 'cap_rec_prof = [\n'
+    for cap in recursos_prof_df["Capacity (h/week)"].tolist():
+        nuevo_contenido += f'    {float(cap)},\n'
+    nuevo_contenido += ']\n\n'
+
+    # Agregar recursos físicos
+    nuevo_contenido += 'nom_rec_fis = [\n'
+    for nombre in recursos_fis_df["Resource"].tolist():
+        nuevo_contenido += f'    "{nombre}",\n'
+    nuevo_contenido += ']\n'
+
+    nuevo_contenido += 'cap_rec_fis = [\n'
+    for cap in recursos_fis_df["Capacity (h/week)"].tolist():
+        nuevo_contenido += f'    {float(cap)},\n'
+    nuevo_contenido += ']\n\n'
+
+    nuevo_contenido += 'nom_rec_total = nom_rec_prof + nom_rec_fis\n'
+    nuevo_contenido += 'cap_rec_total = cap_rec_prof + cap_rec_fis\n\n'
+
+    # Agregar matrices de consumo originales
+    if matrices_contenido:
+        nuevo_contenido += matrices_contenido
+
+    # Guardar el archivo
+    with open(archivo_path, "w", encoding="utf-8") as f:
+        f.write(nuevo_contenido)
+
+    return True
 
 # === CONFIGURACIÓN DE COLORES ARKODE ===
 COLORS = {
@@ -190,6 +288,9 @@ st.markdown("""
 # === CARGAR DATOS ===
 datos_base = obtener_datos_base()
 
+# Contraseña de administrador
+ADMIN_PASSWORD = "AdminSanoviv2026"
+
 # Inicializar estado de sesión
 if "pacientes_actuales" not in st.session_state:
     st.session_state.pacientes_actuales = datos_base["pacientes_actuales"].copy()
@@ -200,6 +301,29 @@ if "resultados" not in st.session_state:
 if "resultado_verificacion" not in st.session_state:
     st.session_state.resultado_verificacion = None
 
+if "admin_mode" not in st.session_state:
+    st.session_state.admin_mode = False
+
+# === SIDEBAR - MODO ADMINISTRADOR ===
+with st.sidebar:
+    st.markdown("### Access Mode")
+
+    if st.session_state.admin_mode:
+        st.success("Administrator Mode Active")
+        if st.button("Logout", use_container_width=True):
+            st.session_state.admin_mode = False
+            st.rerun()
+    else:
+        st.info("Viewer Mode")
+        with st.expander("Administrator Login"):
+            password = st.text_input("Password:", type="password", key="admin_password")
+            if st.button("Login", use_container_width=True):
+                if password == ADMIN_PASSWORD:
+                    st.session_state.admin_mode = True
+                    st.rerun()
+                else:
+                    st.error("Incorrect password")
+
 # === SINCRONIZAR DATOS DEL EDITOR (antes de renderizar pestañas) ===
 # Esto asegura que los cambios del data_editor se reflejen en todas las pestañas
 if "editor_pacientes" in st.session_state:
@@ -207,13 +331,16 @@ if "editor_pacientes" in st.session_state:
     if "edited_rows" in editor_data and editor_data["edited_rows"]:
         # Aplicar cambios editados
         for row_idx, changes in editor_data["edited_rows"].items():
-            if "Pacientes Actuales" in changes:
-                st.session_state.pacientes_actuales[int(row_idx)] = changes["Pacientes Actuales"]
+            if "Current Patients" in changes:
+                st.session_state.pacientes_actuales[int(row_idx)] = changes["Current Patients"]
         # Limpiar resultados anteriores ya que los datos cambiaron
         st.session_state.resultados = None
 
 # === PESTAÑAS ===
-tab1, tab2, tab3, tab4 = st.tabs(["📊 Executive Summary", "👥 Patients", "📈 Resources", "🔍 Verify Admission"])
+if st.session_state.admin_mode:
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 Executive Summary", "👥 Patients", "📈 Resources", "🔍 Verify Admission", "⚙️ Administration"])
+else:
+    tab1, tab2, tab3, tab4 = st.tabs(["📊 Executive Summary", "👥 Patients", "📈 Resources", "🔍 Verify Admission"])
 
 # =====================================================
 # TAB 1: RESUMEN EJECUTIVO
@@ -520,9 +647,28 @@ with tab1:
 with tab2:
     st.markdown('<div class="section-header">Current Patients Configuration</div>', unsafe_allow_html=True)
 
-    # Crear DataFrame para edición
+    # Mostrar info de programas estrella
+    programas_estrella_nombres = [
+        datos_base["nombre_programas"][i]
+        for i, es_estrella in enumerate(datos_base["programas_estrella"])
+        if es_estrella
+    ]
+    if programas_estrella_nombres:
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border: 1px solid #F59E0B; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem;">
+            <span style="font-size: 1.1rem;">⭐</span>
+            <strong style="color: #92400E;">Star Programs ({datos_base["multiplicador_estrella"]}x priority):</strong>
+            <span style="color: #78350F;">{", ".join(programas_estrella_nombres)}</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Crear DataFrame para edición con indicador de estrella
+    program_names_with_star = [
+        f"⭐ {name}" if datos_base["programas_estrella"][i] else name
+        for i, name in enumerate(datos_base["nombre_programas"])
+    ]
     df_pacientes = pd.DataFrame({
-        "Program": datos_base["nombre_programas"],
+        "Program": program_names_with_star,
         "Current Patients": st.session_state.pacientes_actuales,
         "Priority": datos_base["prioridad_programas"],
     })
@@ -956,6 +1102,233 @@ with tab4:
         if not st.session_state.solicitudes_admision:
             st.markdown("<br>", unsafe_allow_html=True)
             st.info("👆 Add admission requests by selecting a program and the number of patients, then click **Add**.")
+
+# =====================================================
+# TAB 5: ADMINISTRACIÓN (solo visible para admin)
+# =====================================================
+if st.session_state.admin_mode:
+    with tab5:
+        st.markdown('<div class="section-header">System Configuration</div>', unsafe_allow_html=True)
+        st.markdown(
+            "Edit treatment programs, professional resources, and physical resources. "
+            "Changes will be saved permanently to the system."
+        )
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # === SECCIÓN 1: PROGRAMAS DE TRATAMIENTO ===
+        st.markdown("#### Treatment Programs")
+        st.caption("Edit program names, priority weights, and star program status")
+
+        # Configuración del multiplicador estrella
+        col_mult1, col_mult2 = st.columns([2, 1])
+        with col_mult1:
+            st.markdown("**Star Program Multiplier**")
+            st.caption("Star programs receive this multiplier on their priority weight during optimization")
+        with col_mult2:
+            multiplicador_estrella = st.number_input(
+                "Multiplier",
+                min_value=1.0,
+                max_value=10.0,
+                value=float(datos_base["multiplicador_estrella"]),
+                step=0.5,
+                format="%.1f",
+                key="multiplicador_estrella_admin",
+                label_visibility="collapsed",
+            )
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # Crear DataFrame para edición de programas
+        df_programas = pd.DataFrame({
+            "Program": datos_base["nombre_programas"],
+            "Priority": datos_base["prioridad_programas"],
+            "Star": datos_base["programas_estrella"],
+        })
+
+        df_programas_editado = st.data_editor(
+            df_programas,
+            column_config={
+                "Program": st.column_config.TextColumn(
+                    "Program Name",
+                    width="large",
+                    help="Name of the treatment program",
+                ),
+                "Priority": st.column_config.NumberColumn(
+                    "Priority Weight",
+                    min_value=0.0,
+                    max_value=10.0,
+                    step=0.01,
+                    format="%.2f",
+                    help="Priority weight (0-10). Higher values = higher priority",
+                ),
+                "Star": st.column_config.CheckboxColumn(
+                    "Star Program",
+                    help="Star programs receive priority multiplier during optimization",
+                    default=False,
+                ),
+            },
+            hide_index=True,
+            use_container_width=True,
+            num_rows="fixed",
+            key="editor_programas_admin",
+        )
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # === SECCIÓN 2: RECURSOS PROFESIONALES ===
+        st.markdown("#### Professional Resources")
+        st.caption("Edit resource names and their weekly capacity in hours")
+
+        # Crear DataFrame para edición de recursos profesionales
+        df_rec_prof = pd.DataFrame({
+            "Resource": datos_base["nombre_rec_prof"],
+            "Capacity (h/week)": datos_base["cap_rec_prof"],
+        })
+
+        df_rec_prof_editado = st.data_editor(
+            df_rec_prof,
+            column_config={
+                "Resource": st.column_config.TextColumn(
+                    "Resource Name",
+                    width="large",
+                    help="Name of the professional resource",
+                ),
+                "Capacity (h/week)": st.column_config.NumberColumn(
+                    "Weekly Capacity (hours)",
+                    min_value=0.0,
+                    max_value=10000.0,
+                    step=0.5,
+                    format="%.1f",
+                    help="Available hours per week",
+                ),
+            },
+            hide_index=True,
+            use_container_width=True,
+            num_rows="fixed",
+            key="editor_rec_prof_admin",
+        )
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # === SECCIÓN 3: RECURSOS FÍSICOS ===
+        st.markdown("#### Physical Resources")
+        st.caption("Edit resource names and their weekly capacity in hours")
+
+        # Crear DataFrame para edición de recursos físicos
+        df_rec_fis = pd.DataFrame({
+            "Resource": datos_base["nombre_rec_fis"],
+            "Capacity (h/week)": datos_base["cap_rec_fis"],
+        })
+
+        df_rec_fis_editado = st.data_editor(
+            df_rec_fis,
+            column_config={
+                "Resource": st.column_config.TextColumn(
+                    "Resource Name",
+                    width="large",
+                    help="Name of the physical resource",
+                ),
+                "Capacity (h/week)": st.column_config.NumberColumn(
+                    "Weekly Capacity (hours)",
+                    min_value=0.0,
+                    max_value=10000.0,
+                    step=0.5,
+                    format="%.1f",
+                    help="Available hours per week",
+                ),
+            },
+            hide_index=True,
+            use_container_width=True,
+            num_rows="fixed",
+            key="editor_rec_fis_admin",
+        )
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # === BOTÓN GUARDAR CON CONFIRMACIÓN ===
+        # Inicializar estado de confirmación
+        if "confirmar_guardado" not in st.session_state:
+            st.session_state.confirmar_guardado = False
+
+        col_save1, col_save2, col_save3 = st.columns([1, 2, 1])
+
+        if not st.session_state.confirmar_guardado:
+            # Paso 1: Botón inicial para guardar
+            with col_save2:
+                guardar_btn = st.button(
+                    "💾 Save All Changes",
+                    type="primary",
+                    use_container_width=True,
+                )
+            if guardar_btn:
+                st.session_state.confirmar_guardado = True
+                st.session_state.datos_a_guardar = {
+                    "programas": df_programas_editado.copy(),
+                    "rec_prof": df_rec_prof_editado.copy(),
+                    "rec_fis": df_rec_fis_editado.copy(),
+                    "multiplicador_estrella": multiplicador_estrella,
+                }
+                st.rerun()
+        else:
+            # Paso 2: Confirmación
+            st.markdown("""
+            <div style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border: 2px solid #F59E0B; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem;">
+                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                    <span style="font-size: 1.75rem;">⚠️</span>
+                    <div>
+                        <strong style="color: #92400E; font-size: 1.1rem;">Confirm Save</strong><br>
+                        <span style="color: #78350F; font-size: 0.95rem;">
+                            You are about to permanently save changes to treatment programs,
+                            professional resources, and physical resources.<br>
+                            <strong>This action cannot be undone.</strong> Are you sure you want to continue?
+                        </span>
+                    </div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            col_confirm, col_cancel = st.columns(2)
+
+            with col_confirm:
+                confirmar_btn = st.button(
+                    "✅ Yes, Save Changes",
+                    type="primary",
+                    use_container_width=True,
+                )
+
+            with col_cancel:
+                cancelar_btn = st.button(
+                    "❌ Cancel",
+                    use_container_width=True,
+                )
+
+            if confirmar_btn:
+                with st.spinner("Saving changes..."):
+                    try:
+                        datos = st.session_state.datos_a_guardar
+                        guardar_datos_sanoviv(
+                            datos["programas"],
+                            datos["rec_prof"],
+                            datos["rec_fis"],
+                            datos["multiplicador_estrella"]
+                        )
+                        st.session_state.confirmar_guardado = False
+                        st.success("✅ Changes saved successfully. Restart the application to see the updated data.")
+                        st.balloons()
+                    except Exception as e:
+                        st.error(f"❌ Error saving changes: {str(e)}")
+                        st.session_state.confirmar_guardado = False
+
+            if cancelar_btn:
+                st.session_state.confirmar_guardado = False
+                st.rerun()
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.warning(
+            "**Important:** After saving changes, you need to restart the application "
+            "(refresh the page) for the new data to take effect."
+        )
 
 # === FOOTER ===
 st.markdown(f"""
