@@ -66,7 +66,7 @@ nom_rec_prof = [
     "Nurse - Hyperthermia",
     "Nurse - Operating Room",
     "General Nurse",
-    "Physical Therapist",
+    "QR Therapist",
     "Physical Therapist SPA",
     "Dental Hygienist",
     "Fitness Instructor",

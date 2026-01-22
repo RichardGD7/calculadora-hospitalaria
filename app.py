@@ -6,7 +6,220 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import os
+import numpy as np
 from optimizador import obtener_datos_base, ejecutar_optimizacion, verificar_admision
+
+
+# =====================================================
+# FUNCIONES DE VALIDACIÓN Y SANITIZACIÓN
+# =====================================================
+
+def safe_int(value, default=0, min_val=None, max_val=None):
+    """
+    Convierte un valor a entero de forma segura.
+    Maneja strings, floats, NaN, None, y valores inválidos.
+    """
+    try:
+        if value is None:
+            return default
+        if isinstance(value, str):
+            # Limpiar espacios y caracteres no numéricos
+            value = value.strip()
+            if value == '' or value == '-':
+                return default
+            # Intentar convertir (maneja "123", "123.5", etc.)
+            value = float(value)
+        if isinstance(value, (float, np.floating)):
+            if np.isnan(value) or np.isinf(value):
+                return default
+            value = int(round(value))
+        if isinstance(value, (int, np.integer)):
+            result = int(value)
+        else:
+            result = default
+
+        # Aplicar límites
+        if min_val is not None:
+            result = max(result, min_val)
+        if max_val is not None:
+            result = min(result, max_val)
+        return result
+    except (ValueError, TypeError, OverflowError):
+        return default
+
+
+def safe_float(value, default=0.0, min_val=None, max_val=None, decimals=2):
+    """
+    Convierte un valor a float de forma segura.
+    Maneja strings, enteros, NaN, None, y valores inválidos.
+    """
+    try:
+        if value is None:
+            return default
+        if isinstance(value, str):
+            value = value.strip().replace(',', '.')
+            if value == '' or value == '-' or value == '.':
+                return default
+            value = float(value)
+        if isinstance(value, (int, np.integer)):
+            value = float(value)
+        if isinstance(value, (float, np.floating)):
+            if np.isnan(value) or np.isinf(value):
+                return default
+            result = round(float(value), decimals)
+        else:
+            result = default
+
+        # Aplicar límites
+        if min_val is not None:
+            result = max(result, min_val)
+        if max_val is not None:
+            result = min(result, max_val)
+        return result
+    except (ValueError, TypeError, OverflowError):
+        return default
+
+
+def safe_bool(value, default=False):
+    """
+    Convierte un valor a booleano de forma segura.
+    """
+    try:
+        if value is None:
+            return default
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, float, np.integer, np.floating)):
+            return bool(value)
+        if isinstance(value, str):
+            return value.lower() in ('true', '1', 'yes', 'si', 'sí')
+        return default
+    except (ValueError, TypeError):
+        return default
+
+
+def safe_string(value, default="", max_length=500):
+    """
+    Convierte y limpia un string de forma segura.
+    """
+    try:
+        if value is None:
+            return default
+        result = str(value).strip()
+        if len(result) > max_length:
+            result = result[:max_length]
+        # Eliminar caracteres potencialmente problemáticos
+        result = result.replace('\x00', '').replace('\r', '')
+        return result if result else default
+    except (ValueError, TypeError):
+        return default
+
+
+def sanitize_patients_dataframe(df, num_programs):
+    """
+    Sanitiza el DataFrame de pacientes, asegurando valores válidos.
+    Retorna una lista de enteros validados.
+    """
+    result = []
+    for i in range(num_programs):
+        try:
+            if i < len(df):
+                value = df.iloc[i]["Current Patients"] if "Current Patients" in df.columns else 0
+                result.append(safe_int(value, default=0, min_val=0, max_val=100))
+            else:
+                result.append(0)
+        except (IndexError, KeyError, TypeError):
+            result.append(0)
+    return result
+
+
+def sanitize_programs_dataframe(df, original_names):
+    """
+    Sanitiza el DataFrame de programas del panel de administración.
+    """
+    sanitized_data = []
+    for i, name in enumerate(original_names):
+        try:
+            if i < len(df):
+                row = df.iloc[i]
+                sanitized_data.append({
+                    "Program": safe_string(row.get("Program", name), default=name, max_length=200),
+                    "Priority": safe_float(row.get("Priority", 1.0), default=1.0, min_val=0.0, max_val=10.0),
+                    "Star": safe_bool(row.get("Star", False), default=False),
+                })
+            else:
+                sanitized_data.append({
+                    "Program": name,
+                    "Priority": 1.0,
+                    "Star": False,
+                })
+        except (IndexError, KeyError, TypeError):
+            sanitized_data.append({
+                "Program": name,
+                "Priority": 1.0,
+                "Star": False,
+            })
+    return pd.DataFrame(sanitized_data)
+
+
+def sanitize_resources_dataframe(df, original_names, original_capacities):
+    """
+    Sanitiza el DataFrame de recursos del panel de administración.
+    """
+    sanitized_data = []
+    for i, (name, cap) in enumerate(zip(original_names, original_capacities)):
+        try:
+            if i < len(df):
+                row = df.iloc[i]
+                sanitized_data.append({
+                    "Resource": safe_string(row.get("Resource", name), default=name, max_length=200),
+                    "Capacity (h/week)": safe_float(row.get("Capacity (h/week)", cap), default=cap, min_val=0.0, max_val=10000.0, decimals=1),
+                })
+            else:
+                sanitized_data.append({
+                    "Resource": name,
+                    "Capacity (h/week)": cap,
+                })
+        except (IndexError, KeyError, TypeError):
+            sanitized_data.append({
+                "Resource": name,
+                "Capacity (h/week)": cap,
+            })
+    return pd.DataFrame(sanitized_data)
+
+
+def validate_before_save(programas_df, recursos_prof_df, recursos_fis_df, multiplicador):
+    """
+    Valida todos los datos antes de guardar. Retorna (is_valid, error_messages).
+    """
+    errors = []
+
+    # Validar multiplicador
+    if not (1.0 <= multiplicador <= 10.0):
+        errors.append(f"Star multiplier must be between 1.0 and 10.0 (got {multiplicador})")
+
+    # Validar programas
+    for i, row in programas_df.iterrows():
+        prog_name = row.get("Program", f"Program {i+1}")
+        priority = row.get("Priority", 0)
+        if not isinstance(priority, (int, float)) or priority < 0 or priority > 10:
+            errors.append(f"Invalid priority for '{prog_name}': must be 0-10")
+
+    # Validar recursos profesionales
+    for i, row in recursos_prof_df.iterrows():
+        res_name = row.get("Resource", f"Resource {i+1}")
+        cap = row.get("Capacity (h/week)", 0)
+        if not isinstance(cap, (int, float)) or cap < 0:
+            errors.append(f"Invalid capacity for '{res_name}': must be >= 0")
+
+    # Validar recursos físicos
+    for i, row in recursos_fis_df.iterrows():
+        res_name = row.get("Resource", f"Resource {i+1}")
+        cap = row.get("Capacity (h/week)", 0)
+        if not isinstance(cap, (int, float)) or cap < 0:
+            errors.append(f"Invalid capacity for '{res_name}': must be >= 0")
+
+    return len(errors) == 0, errors
 
 
 def guardar_datos_sanoviv(programas_df, recursos_prof_df, recursos_fis_df, multiplicador_estrella=3.0):
@@ -326,13 +539,21 @@ with st.sidebar:
 
 # === SINCRONIZAR DATOS DEL EDITOR (antes de renderizar pestañas) ===
 # Esto asegura que los cambios del data_editor se reflejen en todas las pestañas
+# Con validación robusta para evitar errores por caracteres inválidos
 if "editor_pacientes" in st.session_state:
     editor_data = st.session_state.editor_pacientes
     if "edited_rows" in editor_data and editor_data["edited_rows"]:
-        # Aplicar cambios editados
+        # Aplicar cambios editados con validación
         for row_idx, changes in editor_data["edited_rows"].items():
             if "Current Patients" in changes:
-                st.session_state.pacientes_actuales[int(row_idx)] = changes["Current Patients"]
+                try:
+                    idx = safe_int(row_idx, default=0, min_val=0, max_val=len(st.session_state.pacientes_actuales)-1)
+                    # Validar y sanitizar el valor ingresado
+                    new_value = safe_int(changes["Current Patients"], default=0, min_val=0, max_val=100)
+                    st.session_state.pacientes_actuales[idx] = new_value
+                except (IndexError, TypeError, ValueError):
+                    # Si hay algún error, mantener el valor anterior
+                    pass
         # Limpiar resultados anteriores ya que los datos cambiaron
         st.session_state.resultados = None
 
@@ -355,7 +576,7 @@ with tab1:
         total_proyectado = total_actuales + total_adicionales
 
         # Métricas
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2, col3 = st.columns(3)
 
         with col1:
             st.markdown(f"""
@@ -378,14 +599,6 @@ with tab1:
             <div class="metric-card success">
                 <div class="metric-label">Projected Total</div>
                 <div class="metric-value">{total_proyectado}</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-        with col4:
-            st.markdown(f"""
-            <div class="metric-card">
-                <div class="metric-label">Weighted Value</div>
-                <div class="metric-value">{resultados['total_ponderado']:.1f}</div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -703,31 +916,57 @@ with tab2:
     )
 
     # Actualizar estado con los valores editados (solo si cambió)
-    nuevos_valores = df_editado["Current Patients"].tolist()
-    if nuevos_valores != st.session_state.pacientes_actuales:
-        st.session_state.pacientes_actuales = nuevos_valores
-        # Limpiar resultados anteriores ya que los datos cambiaron
-        st.session_state.resultados = None
+    # Aplicar validación robusta a todos los valores
+    try:
+        nuevos_valores = sanitize_patients_dataframe(df_editado, len(datos_base["nombre_programas"]))
+        if nuevos_valores != st.session_state.pacientes_actuales:
+            st.session_state.pacientes_actuales = nuevos_valores
+            # Limpiar resultados anteriores ya que los datos cambiaron
+            st.session_state.resultados = None
+    except Exception as e:
+        # En caso de error, mantener valores actuales y mostrar advertencia
+        st.warning(f"Some values could not be processed. Please enter valid numbers (0-100).")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Botón de cálculo centrado
-    col1, col2, col3 = st.columns([1, 2, 1])
+    # Botones de acción centrados
+    col1, col2, col3, col4 = st.columns([1, 1.2, 1.2, 1])
     with col2:
         calcular = st.button(
             "🔄 Calculate Optimization",
             type="primary",
             use_container_width=True,
         )
+    with col3:
+        limpiar = st.button(
+            "🗑️ Clear All Patients",
+            type="secondary",
+            use_container_width=True,
+        )
+
+    # Acción de limpiar pacientes
+    if limpiar:
+        st.session_state.pacientes_actuales = [0] * len(datos_base["nombre_programas"])
+        st.session_state.resultados = None
+        st.rerun()
 
     if calcular:
         with st.spinner("Running optimization model..."):
             try:
                 st.session_state.resultados = ejecutar_optimizacion(st.session_state.pacientes_actuales)
-                st.success("✅ Optimization completed. Go to **Executive Summary** to see the results.")
+                st.session_state.optimization_just_completed = True
                 st.rerun()
             except Exception as e:
-                st.error(f"❌ Error running the optimization: {str(e)}")
+                st.markdown(f"""
+                <div style="background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%); border: 2px solid #EF4444; border-radius: 12px; padding: 1rem; margin: 1rem 0;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 1.5rem;">❌</span>
+                        <span style="color: #7F1D1D;">
+                            <strong>Optimization Error:</strong> {str(e)}
+                        </span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
                 st.session_state.resultados = None
 
     # Mostrar resultados de pacientes adicionales si existen
@@ -735,6 +974,26 @@ with tab2:
         resultados = st.session_state.resultados
 
         st.markdown("<br>", unsafe_allow_html=True)
+
+        # Banner de éxito solo cuando la optimización se completó SIN recursos excedidos
+        # (Si hay bypass de recursos, no mostramos éxito para evitar mensajes contradictorios)
+        if st.session_state.get("optimization_just_completed", False):
+            if not resultados["recursos_excedidos"]:
+                total_adicionales = sum(resultados["pacientes_adicionales"])
+                st.markdown(f"""
+                <div style="background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%); border: 2px solid #10B981; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 1.5rem;">✅</span>
+                        <span style="color: #065F46;">
+                            <strong>Optimization Completed Successfully!</strong> The model found an optimal solution.
+                            You can admit up to <strong>{total_adicionales}</strong> additional patients.
+                            Go to <strong>Executive Summary</strong> to see the full results.
+                        </span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            # Siempre resetear el flag, independientemente de si se mostró o no el banner
+            st.session_state.optimization_just_completed = False
 
         # Advertencia si hay recursos excedidos (mostrar antes de la tabla)
         if resultados["recursos_excedidos"]:
@@ -918,7 +1177,10 @@ with tab4:
 
     with col_btn1:
         if st.button("➕ Add", use_container_width=True):
-            st.session_state.solicitudes_admision[programa_seleccionado] = cantidad_pacientes
+            # Validar cantidad antes de agregar
+            cantidad_validada = safe_int(cantidad_pacientes, default=1, min_val=1, max_val=50)
+            programa_validado = safe_int(programa_seleccionado, default=0, min_val=0, max_val=len(datos_base["nombre_programas"])-1)
+            st.session_state.solicitudes_admision[programa_validado] = cantidad_validada
             st.rerun()
 
     with col_btn2:
@@ -985,11 +1247,29 @@ with tab4:
         st.markdown("---")
         st.markdown("### Verification Result")
 
-        # Mostrar resultado general
+        # Mostrar resultado general con banners estilizados
         if resultado["factible"]:
-            st.success("✅ **FEASIBLE**: It is possible to admit all requested patients.")
+            st.markdown("""
+            <div style="background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%); border: 2px solid #10B981; border-radius: 12px; padding: 1rem; margin: 1rem 0; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.5rem;">✅</span>
+                    <span style="color: #065F46;">
+                        <strong>FEASIBLE:</strong> It is possible to admit all requested patients with current capacity.
+                    </span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
         else:
-            st.error("❌ **NOT FEASIBLE**: It is not possible to admit all requested patients with current capacity.")
+            st.markdown("""
+            <div style="background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%); border: 2px solid #EF4444; border-radius: 12px; padding: 1rem; margin: 1rem 0; box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2);">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.5rem;">❌</span>
+                    <span style="color: #7F1D1D;">
+                        <strong>NOT FEASIBLE:</strong> It is not possible to admit all requested patients with current capacity.
+                    </span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
         # Detalle por solicitud
         st.markdown("<br>", unsafe_allow_html=True)
@@ -999,17 +1279,29 @@ with tab4:
             pacientes_actuales_programa = st.session_state.pacientes_actuales[detalle["programa_idx"]]
             if detalle["factible"]:
                 st.markdown(f"""
-                <div style="background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 8px; padding: 1rem; margin: 0.5rem 0;">
-                    <strong>✅ {detalle['programa']}</strong><br>
-                    Current: {pacientes_actuales_programa} | Requested: {detalle['cantidad_solicitada']} | Maximum admissible: {detalle['max_admisible']}
+                <div style="background: linear-gradient(135deg, #D1FAE5 0%, #ECFDF5 100%); border: 1px solid #10B981; border-radius: 10px; padding: 1rem; margin: 0.5rem 0; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.1);">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 0.5rem;">
+                        <span style="font-size: 1.2rem;">✅</span>
+                        <strong style="color: #065F46;">{detalle['programa']}</strong>
+                    </div>
+                    <div style="color: #047857; font-size: 0.9rem;">
+                        Current: <strong>{pacientes_actuales_programa}</strong> | Requested: <strong>{detalle['cantidad_solicitada']}</strong> | Maximum admissible: <strong>{detalle['max_admisible']}</strong>
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
             else:
                 st.markdown(f"""
-                <div style="background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px; padding: 1rem; margin: 0.5rem 0;">
-                    <strong>❌ {detalle['programa']}</strong><br>
-                    Current: {pacientes_actuales_programa} | Requested: {detalle['cantidad_solicitada']} | Maximum admissible: {detalle['max_admisible']} | Deficit: {detalle['deficit']}<br>
-                    <em>Limiting resource: {detalle['recurso_limitante']}</em>
+                <div style="background: linear-gradient(135deg, #FEE2E2 0%, #FEF2F2 100%); border: 1px solid #EF4444; border-radius: 10px; padding: 1rem; margin: 0.5rem 0; box-shadow: 0 2px 4px rgba(239, 68, 68, 0.1);">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 0.5rem;">
+                        <span style="font-size: 1.2rem;">❌</span>
+                        <strong style="color: #7F1D1D;">{detalle['programa']}</strong>
+                    </div>
+                    <div style="color: #991B1B; font-size: 0.9rem;">
+                        Current: <strong>{pacientes_actuales_programa}</strong> | Requested: <strong>{detalle['cantidad_solicitada']}</strong> | Maximum admissible: <strong>{detalle['max_admisible']}</strong> | Deficit: <strong>{detalle['deficit']}</strong>
+                    </div>
+                    <div style="color: #B91C1C; font-size: 0.85rem; font-style: italic; margin-top: 0.3rem;">
+                        Limiting resource: {detalle['recurso_limitante']}
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -1262,14 +1554,46 @@ if st.session_state.admin_mode:
                     use_container_width=True,
                 )
             if guardar_btn:
-                st.session_state.confirmar_guardado = True
-                st.session_state.datos_a_guardar = {
-                    "programas": df_programas_editado.copy(),
-                    "rec_prof": df_rec_prof_editado.copy(),
-                    "rec_fis": df_rec_fis_editado.copy(),
-                    "multiplicador_estrella": multiplicador_estrella,
-                }
-                st.rerun()
+                # Sanitizar todos los datos antes de preparar para guardar
+                multiplicador_validado = safe_float(multiplicador_estrella, default=3.0, min_val=1.0, max_val=10.0)
+
+                programas_sanitizados = sanitize_programs_dataframe(
+                    df_programas_editado,
+                    datos_base["nombre_programas"]
+                )
+
+                recursos_prof_sanitizados = sanitize_resources_dataframe(
+                    df_rec_prof_editado,
+                    datos_base["nombre_rec_prof"],
+                    datos_base["cap_rec_prof"]
+                )
+
+                recursos_fis_sanitizados = sanitize_resources_dataframe(
+                    df_rec_fis_editado,
+                    datos_base["nombre_rec_fis"],
+                    datos_base["cap_rec_fis"]
+                )
+
+                # Validar antes de continuar
+                is_valid, errors = validate_before_save(
+                    programas_sanitizados,
+                    recursos_prof_sanitizados,
+                    recursos_fis_sanitizados,
+                    multiplicador_validado
+                )
+
+                if not is_valid:
+                    for error in errors:
+                        st.error(f"Validation error: {error}")
+                else:
+                    st.session_state.confirmar_guardado = True
+                    st.session_state.datos_a_guardar = {
+                        "programas": programas_sanitizados,
+                        "rec_prof": recursos_prof_sanitizados,
+                        "rec_fis": recursos_fis_sanitizados,
+                        "multiplicador_estrella": multiplicador_validado,
+                    }
+                    st.rerun()
         else:
             # Paso 2: Confirmación
             st.markdown("""
