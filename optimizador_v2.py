@@ -3,13 +3,13 @@
 
 Expone tres funciones públicas:
     construir_modelo_datos()  → Prepara todas las estructuras del modelo a partir
-                                de datos_sanoviv.py. Se llama una vez por sesión
+                                de BD_sanoviv.py. Se llama una vez por sesión
                                 o cada vez que los datos cambian.
     ejecutar_optimizacion()   → Resuelve el ILP y retorna pacientes adicionales.
     verificar_admision()      → Verifica si una solicitud específica es factible.
 
 Las matrices de consumo se calculan en tiempo real desde las actividades definidas
-en datos_sanoviv.programas. No existen matrices precalculadas.
+en BD_sanoviv.programas. No existen matrices precalculadas.
 
 Fórmula de consumo semanal por paciente para una actividad:
     consumo_h = (cantidad * duracion_min / 60) / (duracion_dias / 7)
@@ -24,7 +24,7 @@ from pulp import (
     LpMaximize,
     PULP_CBC_CMD,
 )
-import datos_sanoviv as datos
+import BD_sanoviv as datos
 
 # Tolerancia numérica para comparaciones de punto flotante
 TOL = 1e-9
@@ -37,7 +37,7 @@ TOL = 1e-9
 def construir_modelo_datos() -> dict:
     """Construye todas las estructuras necesarias para el modelo ILP.
 
-    Lee datos_sanoviv.programas, recursos_profesionales y recursos_fisicos,
+    Lee BD_sanoviv.programas, recursos_profesionales y recursos_fisicos,
     y calcula las matrices de consumo en tiempo real.
 
     Returns:
@@ -138,7 +138,7 @@ def obtener_datos_base() -> dict:
     """Retorna los datos base del modelo para uso en la interfaz (app.py).
 
     Mantiene compatibilidad con la interfaz anterior de app.py.
-    Construye el modelo en tiempo real desde datos_sanoviv.py.
+    Construye el modelo en tiempo real desde BD_sanoviv.py.
     """
     md = construir_modelo_datos()
 

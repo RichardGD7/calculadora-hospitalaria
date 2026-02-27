@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 import os
 import numpy as np
 from optimizador_v2 import obtener_datos_base, ejecutar_optimizacion, verificar_admision
-import datos_sanoviv as datos
+import BD_sanoviv as datos
 
 
 # =====================================================
@@ -224,14 +224,14 @@ def validate_before_save(programas_df, recursos_prof_df, recursos_fis_df, multip
 
 
 def guardar_datos_sanoviv(programas_data, recursos_prof_data, recursos_fis_data):
-    """Guarda los datos editados en el archivo datos_sanoviv.py.
+    """Guarda los datos editados en el archivo BD_sanoviv.py.
 
     Args:
         programas_data: dict con la estructura completa de programas
         recursos_prof_data: list[dict] con recursos profesionales
         recursos_fis_data: list[dict] con recursos físicos
     """
-    archivo_path = os.path.join(os.path.dirname(__file__), "datos_sanoviv.py")
+    archivo_path = os.path.join(os.path.dirname(__file__), "BD_sanoviv.py")
 
     # Construir el contenido del archivo
     contenido = '''"""
@@ -243,6 +243,8 @@ programas : dict[str, dict]
     Cada programa tiene:
         duracion_dias   : int
         prioridad       : int   (1 = más alta)
+        tipo            : str   ("programa" | "extension")
+        programa_base   : str   (solo en extensiones — nombre del programa base)
         actividades     : list[dict]
             nombre          : str
             tipo            : str   (Consulta / Terapia / Estudio / Otro)
@@ -273,6 +275,9 @@ consumo_semanal_h = (cantidad * duracion_min / 60) / (duracion_dias / 7)
         contenido += f"    {repr(prog_name)}: {{\n"
         contenido += f'        "duracion_dias": {prog_data["duracion_dias"]},\n'
         contenido += f'        "prioridad": {prog_data["prioridad"]},\n'
+        contenido += f'        "tipo":          {repr(prog_data.get("tipo", "programa"))},\n'
+        if prog_data.get("programa_base"):
+            contenido += f'        "programa_base": {repr(prog_data["programa_base"])},\n'
         contenido += '        "actividades": [\n'
 
         for act in prog_data["actividades"]:
@@ -513,6 +518,12 @@ st.markdown("""
 # === CARGAR DATOS ===
 datos_base = obtener_datos_base()
 
+# === ÍNDICES POR TIPO (programa base vs extensión) ===
+_programas_dict = datos_base["programas"]
+_nombres = datos_base["nombre_programas"]
+indices_base = [i for i, n in enumerate(_nombres) if _programas_dict[n].get("tipo") == "programa"]
+indices_ext = [i for i, n in enumerate(_nombres) if _programas_dict[n].get("tipo") == "extension"]
+
 # Contraseña de administrador
 ADMIN_PASSWORD = "AdminSanoviv2026"
 
@@ -552,22 +563,20 @@ with st.sidebar:
 # === SINCRONIZAR DATOS DEL EDITOR (antes de renderizar pestañas) ===
 # Esto asegura que los cambios del data_editor se reflejen en todas las pestañas
 # Con validación robusta para evitar errores por caracteres inválidos
-if "editor_pacientes" in st.session_state:
-    editor_data = st.session_state.editor_pacientes
-    if "edited_rows" in editor_data and editor_data["edited_rows"]:
-        # Aplicar cambios editados con validación
-        for row_idx, changes in editor_data["edited_rows"].items():
-            if "Current Patients" in changes:
-                try:
-                    idx = safe_int(row_idx, default=0, min_val=0, max_val=len(st.session_state.pacientes_actuales)-1)
-                    # Validar y sanitizar el valor ingresado
-                    new_value = safe_int(changes["Current Patients"], default=0, min_val=0, max_val=100)
-                    st.session_state.pacientes_actuales[idx] = new_value
-                except (IndexError, TypeError, ValueError):
-                    # Si hay algún error, mantener el valor anterior
-                    pass
-        # Limpiar resultados anteriores ya que los datos cambiaron
-        st.session_state.resultados = None
+for editor_key, idx_map in [("editor_pacientes_base", indices_base), ("editor_pacientes_ext", indices_ext)]:
+    if editor_key in st.session_state:
+        editor_data = st.session_state[editor_key]
+        if "edited_rows" in editor_data and editor_data["edited_rows"]:
+            for row_idx, changes in editor_data["edited_rows"].items():
+                if "Current Patients" in changes:
+                    try:
+                        local_idx = safe_int(row_idx, default=0, min_val=0, max_val=len(idx_map)-1)
+                        global_idx = idx_map[local_idx]
+                        new_value = safe_int(changes["Current Patients"], default=0, min_val=0, max_val=100)
+                        st.session_state.pacientes_actuales[global_idx] = new_value
+                    except (IndexError, TypeError, ValueError):
+                        pass
+            st.session_state.resultados = None
 
 # === PESTAÑAS ===
 if st.session_state.admin_mode:
@@ -872,35 +881,17 @@ with tab1:
 with tab2:
     st.markdown('<div class="section-header">Current Patients Configuration</div>', unsafe_allow_html=True)
 
-    # Mostrar info de programas estrella
-    programas_estrella_nombres = [
-        datos_base["nombre_programas"][i]
-        for i, es_estrella in enumerate(datos_base["programas_estrella"])
-        if es_estrella
-    ]
-    if programas_estrella_nombres:
-        st.markdown(f"""
-        <div style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border: 1px solid #F59E0B; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem;">
-            <span style="font-size: 1.1rem;">⭐</span>
-            <strong style="color: #92400E;">Star Programs ({datos_base["multiplicador_estrella"]}x priority):</strong>
-            <span style="color: #78350F;">{", ".join(programas_estrella_nombres)}</span>
-        </div>
-        """, unsafe_allow_html=True)
+    # ── Sección: Programas Base ──────────────────────────────────────────────
+    st.markdown("#### Base Programs")
 
-    # Crear DataFrame para edición con indicador de estrella
-    program_names_with_star = [
-        f"⭐ {name}" if datos_base["programas_estrella"][i] else name
-        for i, name in enumerate(datos_base["nombre_programas"])
-    ]
-    df_pacientes = pd.DataFrame({
-        "Program": program_names_with_star,
-        "Current Patients": st.session_state.pacientes_actuales,
-        "Priority": datos_base["prioridad_programas"],
+    df_base = pd.DataFrame({
+        "Program": [_nombres[i] for i in indices_base],
+        "Current Patients": [st.session_state.pacientes_actuales[i] for i in indices_base],
+        "Priority": [datos_base["prioridad_programas"][i] for i in indices_base],
     })
 
-    # Editor de datos
-    df_editado = st.data_editor(
-        df_pacientes,
+    df_base_editado = st.data_editor(
+        df_base,
         column_config={
             "Program": st.column_config.TextColumn(
                 "Treatment Program",
@@ -924,20 +915,76 @@ with tab2:
         },
         hide_index=True,
         use_container_width=True,
-        key="editor_pacientes",
+        key="editor_pacientes_base",
     )
 
-    # Actualizar estado con los valores editados (solo si cambió)
-    # Aplicar validación robusta a todos los valores
+    # Sync base programs back
     try:
-        nuevos_valores = sanitize_patients_dataframe(df_editado, len(datos_base["nombre_programas"]))
-        if nuevos_valores != st.session_state.pacientes_actuales:
-            st.session_state.pacientes_actuales = nuevos_valores
-            # Limpiar resultados anteriores ya que los datos cambiaron
-            st.session_state.resultados = None
-    except Exception as e:
-        # En caso de error, mantener valores actuales y mostrar advertencia
-        st.warning(f"Some values could not be processed. Please enter valid numbers (0-100).")
+        for local_idx, global_idx in enumerate(indices_base):
+            if local_idx < len(df_base_editado):
+                val = safe_int(df_base_editado.iloc[local_idx]["Current Patients"], default=0, min_val=0, max_val=100)
+                if val != st.session_state.pacientes_actuales[global_idx]:
+                    st.session_state.pacientes_actuales[global_idx] = val
+                    st.session_state.resultados = None
+    except Exception:
+        st.warning("Some values could not be processed. Please enter valid numbers (0-100).")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ── Sección: Extensiones ─────────────────────────────────────────────────
+    st.markdown("#### Extensions")
+    st.caption("Extensions belong to a base program and represent additional weeks or treatments.")
+
+    df_ext = pd.DataFrame({
+        "Extension": [_nombres[i] for i in indices_ext],
+        "Base Program": [_programas_dict[_nombres[i]].get("programa_base", "") for i in indices_ext],
+        "Current Patients": [st.session_state.pacientes_actuales[i] for i in indices_ext],
+        "Priority": [datos_base["prioridad_programas"][i] for i in indices_ext],
+    })
+
+    df_ext_editado = st.data_editor(
+        df_ext,
+        column_config={
+            "Extension": st.column_config.TextColumn(
+                "Extension",
+                disabled=True,
+                width="large",
+            ),
+            "Base Program": st.column_config.TextColumn(
+                "Base Program",
+                disabled=True,
+                width="medium",
+            ),
+            "Current Patients": st.column_config.NumberColumn(
+                "Current Patients",
+                min_value=0,
+                max_value=100,
+                step=1,
+                format="%d",
+                help="Number of patients currently in this extension",
+            ),
+            "Priority": st.column_config.NumberColumn(
+                "Priority",
+                disabled=True,
+                format="%.2f",
+                help="Program priority weight (higher = more important)",
+            ),
+        },
+        hide_index=True,
+        use_container_width=True,
+        key="editor_pacientes_ext",
+    )
+
+    # Sync extensions back
+    try:
+        for local_idx, global_idx in enumerate(indices_ext):
+            if local_idx < len(df_ext_editado):
+                val = safe_int(df_ext_editado.iloc[local_idx]["Current Patients"], default=0, min_val=0, max_val=100)
+                if val != st.session_state.pacientes_actuales[global_idx]:
+                    st.session_state.pacientes_actuales[global_idx] = val
+                    st.session_state.resultados = None
+    except Exception:
+        st.warning("Some values could not be processed. Please enter valid numbers (0-100).")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -1161,11 +1208,20 @@ with tab4:
     col_form1, col_form2 = st.columns([2, 1])
 
     with col_form1:
-        # Selector de programa
+        # Selector de programa (agrupado: base programs primero, luego extensions con prefijo)
+        _opciones_verificar = indices_base + indices_ext
+
+        def _fmt_programa_verificar(idx):
+            name = datos_base["nombre_programas"][idx]
+            prog = _programas_dict[name]
+            if prog.get("tipo") == "extension":
+                return f"  \u21b3 {name}  ({prog.get('programa_base', '')})"
+            return name
+
         programa_seleccionado = st.selectbox(
             "Select program:",
-            options=range(len(datos_base["nombre_programas"])),
-            format_func=lambda x: datos_base["nombre_programas"][x],
+            options=_opciones_verificar,
+            format_func=_fmt_programa_verificar,
             key="programa_verificar",
         )
 
@@ -1573,11 +1629,22 @@ if st.session_state.admin_mode:
         st.markdown("#### Programs and Activities")
         st.caption("Select a program to edit its duration and activities")
 
-        # Selector de programa
+        # Selector de programa (agrupado: base programs primero, luego extensions)
         programa_nombres = list(st.session_state.admin_programas.keys())
+        _admin_base = [n for n in programa_nombres if st.session_state.admin_programas[n].get("tipo") == "programa"]
+        _admin_ext = [n for n in programa_nombres if st.session_state.admin_programas[n].get("tipo") == "extension"]
+        _admin_opciones = _admin_base + _admin_ext
+
+        def _fmt_admin_programa(name):
+            prog = st.session_state.admin_programas[name]
+            if prog.get("tipo") == "extension":
+                return f"  \u21b3 {name}  ({prog.get('programa_base', '')})"
+            return name
+
         programa_seleccionado = st.selectbox(
             "Select Program:",
-            options=programa_nombres,
+            options=_admin_opciones,
+            format_func=_fmt_admin_programa,
             key="admin_programa_selector",
         )
 
