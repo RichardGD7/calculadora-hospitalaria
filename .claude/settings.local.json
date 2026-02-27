@@ -4,7 +4,10 @@
       "Bash(grep:*)",
       "Bash(cat:*)",
       "Bash(python3:*)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nMigrate app.py to use datos_sanoviv and optimizador_v2\n\n- Update imports to use optimizador_v2 and datos_sanoviv modules\n- Rewrite guardar_datos_sanoviv\\(\\) to write new data format\n- Redesign admin panel with editable resource tables:\n  - Professional resources: edit num_personas, cap_semanal_por_persona\n  - Physical resources: edit num_unidades, cap_semanal_por_unidad\n  - Programs: edit duracion_dias and activity details\n- Update obtener_datos_base\\(\\) to provide full data structures for admin\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit:*)"
     ]
   }
 }
