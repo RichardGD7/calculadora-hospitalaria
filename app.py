@@ -1469,7 +1469,7 @@ if st.session_state.admin_mode:
                     help="Number of people in this role",
                 ),
                 "Capacity/Person (h/week)": st.column_config.NumberColumn(
-                    "Cap/Person (h)",
+                    "Cap/Person (h/week)",
                     min_value=0.0,
                     max_value=200.0,
                     step=0.5,
@@ -1477,7 +1477,7 @@ if st.session_state.admin_mode:
                     help="Weekly capacity per person in hours",
                 ),
                 "Total Capacity (h/week)": st.column_config.NumberColumn(
-                    "Total Cap (h)",
+                    "Total Cap (h/week)",
                     disabled=True,
                     format="%.1f",
                     help="Total = People × Capacity/Person (auto-calculated)",
@@ -1538,7 +1538,7 @@ if st.session_state.admin_mode:
                     help="Number of units available",
                 ),
                 "Capacity/Unit (h/week)": st.column_config.NumberColumn(
-                    "Cap/Unit (h)",
+                    "Cap/Unit (h/week)",
                     min_value=0.0,
                     max_value=500.0,
                     step=0.5,
@@ -1546,7 +1546,7 @@ if st.session_state.admin_mode:
                     help="Weekly capacity per unit in hours",
                 ),
                 "Total Capacity (h/week)": st.column_config.NumberColumn(
-                    "Total Cap (h)",
+                    "Total Cap (h/week)",
                     disabled=True,
                     format="%.1f",
                     help="Total = Units × Capacity/Unit (auto-calculated)",
@@ -1605,20 +1605,19 @@ if st.session_state.admin_mode:
 
             # Tabla de actividades
             st.markdown(f"**Activities for {programa_seleccionado}**")
-            st.caption("Edit quantity and duration of activities. Professional and physical resources must match existing resource names.")
+            st.caption("Edit quantity, duration and resources for each activity.")
 
-            # Obtener listas de recursos válidos para validación
+            # Obtener listas de recursos válidos
             recursos_prof_validos = [r["nombre"] for r in st.session_state.admin_recursos_prof]
             recursos_fis_validos = [r["nombre"] for r in st.session_state.admin_recursos_fis]
 
-            # Crear DataFrame de actividades
+            # Crear DataFrame de actividades (recursos prof como read-only para mostrar)
             df_actividades = pd.DataFrame([
                 {
                     "Activity": act["nombre"],
                     "Type": act["tipo"],
                     "Quantity": act["cantidad"],
                     "Duration (min)": act["duracion_min"],
-                    "Prof. Resources": ", ".join(act["recursos_prof"]) if act["recursos_prof"] else "",
                     "Physical Resource": act["recurso_fis"] if act["recurso_fis"] else "",
                 }
                 for act in prog_data["actividades"]
@@ -1638,12 +1637,12 @@ if st.session_state.admin_mode:
                         width="small",
                     ),
                     "Quantity": st.column_config.NumberColumn(
-                        "Qty",
+                        "Qty/Program",
                         min_value=0,
                         max_value=100,
                         step=1,
                         format="%d",
-                        help="Number of times this activity occurs during the program",
+                        help="Number of times this activity occurs during the entire program stay",
                     ),
                     "Duration (min)": st.column_config.NumberColumn(
                         "Duration (min)",
@@ -1652,11 +1651,6 @@ if st.session_state.admin_mode:
                         step=5,
                         format="%d",
                         help="Duration of each session in minutes",
-                    ),
-                    "Prof. Resources": st.column_config.TextColumn(
-                        "Prof. Resources",
-                        help=f"Comma-separated list. Valid: {', '.join(recursos_prof_validos[:5])}...",
-                        width="large",
                     ),
                     "Physical Resource": st.column_config.SelectboxColumn(
                         "Physical Resource",
@@ -1671,22 +1665,49 @@ if st.session_state.admin_mode:
                 key=f"editor_actividades_{programa_seleccionado}",
             )
 
-            # Actualizar session_state con cambios en actividades
+            # Actualizar session_state con cambios de la tabla
             for i, row in df_actividades_editado.iterrows():
                 st.session_state.admin_programas[programa_seleccionado]["actividades"][i]["cantidad"] = safe_int(row["Quantity"], default=1, min_val=0)
                 st.session_state.admin_programas[programa_seleccionado]["actividades"][i]["duracion_min"] = safe_int(row["Duration (min)"], default=30, min_val=1)
-
-                # Parsear recursos profesionales (comma-separated)
-                prof_resources_str = safe_string(row["Prof. Resources"], default="")
-                if prof_resources_str:
-                    prof_list = [r.strip() for r in prof_resources_str.split(",") if r.strip()]
-                    st.session_state.admin_programas[programa_seleccionado]["actividades"][i]["recursos_prof"] = prof_list
-                else:
-                    st.session_state.admin_programas[programa_seleccionado]["actividades"][i]["recursos_prof"] = []
-
-                # Recurso físico
                 phys_resource = safe_string(row["Physical Resource"], default="")
                 st.session_state.admin_programas[programa_seleccionado]["actividades"][i]["recurso_fis"] = phys_resource if phys_resource else None
+
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            # Editor de recursos profesionales por actividad
+            st.markdown("**Edit Professional Resources per Activity**")
+            st.caption("Select an activity to assign professional resources using the multi-select below.")
+
+            # Selector de actividad
+            actividad_nombres = [act["nombre"] for act in prog_data["actividades"]]
+            actividad_seleccionada = st.selectbox(
+                "Select Activity:",
+                options=range(len(actividad_nombres)),
+                format_func=lambda x: actividad_nombres[x],
+                key=f"admin_actividad_selector_{programa_seleccionado}",
+            )
+
+            if actividad_seleccionada is not None:
+                act_actual = st.session_state.admin_programas[programa_seleccionado]["actividades"][actividad_seleccionada]
+
+                # Multiselect para recursos profesionales
+                recursos_actuales = act_actual.get("recursos_prof", [])
+                # Asegurar que los recursos actuales existan en la lista válida
+                recursos_actuales_validos = [r for r in recursos_actuales if r in recursos_prof_validos]
+
+                nuevos_recursos = st.multiselect(
+                    "Professional Resources:",
+                    options=recursos_prof_validos,
+                    default=recursos_actuales_validos,
+                    key=f"multiselect_prof_{programa_seleccionado}_{actividad_seleccionada}",
+                    help="Select one or more professional resources required for this activity",
+                )
+
+                # Actualizar los recursos profesionales en session_state
+                st.session_state.admin_programas[programa_seleccionado]["actividades"][actividad_seleccionada]["recursos_prof"] = nuevos_recursos
+
+                # Mostrar resumen de la actividad seleccionada
+                st.info(f"**{act_actual['nombre']}**: {len(nuevos_recursos)} professional resource(s) assigned")
 
         st.markdown("<br>", unsafe_allow_html=True)
 
