@@ -145,6 +145,10 @@ def obtener_datos_base() -> dict:
     # Pacientes actuales por defecto: 0 para todos los programas
     pacientes_actuales = [0] * md["n_programas"]
 
+    # Convertir capacidades a listas para compatibilidad con app.py
+    cap_rec_prof_list = [md["cap_rec_prof"][n] for n in md["nombres_rec_prof"]]
+    cap_rec_fis_list = [md["cap_rec_fis"][n] for n in md["nombres_rec_fis"]]
+
     return {
         "n_programas":        md["n_programas"],
         "m_recursos":         md["n_recursos"],
@@ -155,11 +159,16 @@ def obtener_datos_base() -> dict:
         "prioridad_programas": md["prioridades"],
         "capacidades":        md["capacidades"],
         "consumo":            md["consumo"],
-        # Separados para la UI de administración
+        # Separados para la UI de administración (como listas)
         "nombre_rec_prof":    md["nombres_rec_prof"],
         "nombre_rec_fis":     md["nombres_rec_fis"],
-        "cap_rec_prof":       md["cap_rec_prof"],
-        "cap_rec_fis":        md["cap_rec_fis"],
+        "cap_rec_prof":       cap_rec_prof_list,
+        "cap_rec_fis":        cap_rec_fis_list,
+        # Datos completos para edición en admin
+        "recursos_profesionales": datos.recursos_profesionales,
+        "recursos_fisicos":       datos.recursos_fisicos,
+        "programas":              datos.programas,
+        "duraciones_dias":        md["duraciones_dias"],
         # Campos de compatibilidad (programas estrella ya no se usan aquí)
         "programas_estrella":     [False] * md["n_programas"],
         "multiplicador_estrella": 1.0,

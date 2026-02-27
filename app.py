@@ -7,7 +7,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 import os
 import numpy as np
-from optimizador import obtener_datos_base, ejecutar_optimizacion, verificar_admision
+from optimizador_v2 import obtener_datos_base, ejecutar_optimizacion, verificar_admision
+import datos_sanoviv as datos
 
 
 # =====================================================
@@ -222,99 +223,110 @@ def validate_before_save(programas_df, recursos_prof_df, recursos_fis_df, multip
     return len(errors) == 0, errors
 
 
-def guardar_datos_sanoviv(programas_df, recursos_prof_df, recursos_fis_df, multiplicador_estrella=3.0):
-    """Guarda los datos editados en el archivo datos_sanoviv_generado.py"""
-    import datos_sanoviv_generado as datos
+def guardar_datos_sanoviv(programas_data, recursos_prof_data, recursos_fis_data):
+    """Guarda los datos editados en el archivo datos_sanoviv.py.
 
-    # Obtener ruta del archivo
-    archivo_path = os.path.join(os.path.dirname(__file__), "datos_sanoviv_generado.py")
+    Args:
+        programas_data: dict con la estructura completa de programas
+        recursos_prof_data: list[dict] con recursos profesionales
+        recursos_fis_data: list[dict] con recursos físicos
+    """
+    archivo_path = os.path.join(os.path.dirname(__file__), "datos_sanoviv.py")
 
-    # Leer el archivo original para preservar las matrices de consumo
-    with open(archivo_path, "r", encoding="utf-8") as f:
-        contenido_original = f.read()
+    # Construir el contenido del archivo
+    contenido = '''"""
+datos_sanoviv.py — Fuente única de verdad para la Calculadora de Capacidad Sanoviv
 
-    # Extraer matrices de consumo del archivo original
-    # Buscar desde "matriz_consumo_prof" hasta el final
-    inicio_matriz = contenido_original.find("# Matriz de consumo de recursos profesionales")
-    matrices_contenido = contenido_original[inicio_matriz:] if inicio_matriz != -1 else ""
+ESTRUCTURA DE DATOS
+===================
+programas : dict[str, dict]
+    Cada programa tiene:
+        duracion_dias   : int
+        prioridad       : int   (1 = más alta)
+        actividades     : list[dict]
+            nombre          : str
+            tipo            : str   (Consulta / Terapia / Estudio / Otro)
+            cantidad        : int   (ocurrencias por estancia completa)
+            duracion_min    : int   (minutos por sesión)
+            recursos_prof   : list[str]   (nombres exactos de recursos profesionales)
+            recurso_fis     : str | None  (nombre exacto de recurso físico, o None)
 
-    # Construir el nuevo contenido
-    nuevo_contenido = '''# -*- coding: utf-8 -*-
+recursos_profesionales : list[dict]
+    departamento, nombre, num_personas,
+    cap_semanal_por_persona (h), cap_semanal_total (h)
 
-# Programas y pacientes actuales
-orden_programas = [
-'''
-    # Agregar programas
-    for nombre in programas_df["Program"].tolist():
-        nuevo_contenido += f'    "{nombre}",\n'
-    nuevo_contenido += ']\n\n'
+recursos_fisicos : list[dict]
+    departamento, nombre, num_unidades,
+    cap_semanal_por_unidad (h), cap_semanal_total (h)
 
-    # Agregar prioridades
-    nuevo_contenido += '''# Definición de Prioridades de los Programas
-# Valores más altos = más prioridad. Si no defines esta lista, el modelo usa 1.0 para todos.
-prioridad_programas = [
-'''
-    for i, (_, row) in enumerate(programas_df.iterrows()):
-        nuevo_contenido += f'    {row["Priority"]:.2f},  # {row["Program"]}\n'
-    nuevo_contenido += ']\n\n'
+CÁLCULO DE CONSUMO SEMANAL (aplicado en optimizador.py)
+=========================================================
+consumo_semanal_h = (cantidad * duracion_min / 60) / (duracion_dias / 7)
+"""
 
-    # Agregar configuración de programas estrella
-    nuevo_contenido += '''# Configuración de Programas Estrella
-# Los programas marcados como True reciben un multiplicador adicional en la optimización
-# para garantizar que sean priorizados sobre otros programas
-programas_estrella = [
-'''
-    for i, (_, row) in enumerate(programas_df.iterrows()):
-        es_estrella = row.get("Star", False)
-        estrella_str = "True" if es_estrella else "False"
-        comentario = " - PROGRAMA ESTRELLA" if es_estrella else ""
-        nuevo_contenido += f'    {estrella_str},  # {row["Program"]}{comentario}\n'
-    nuevo_contenido += ']\n\n'
-
-    # Agregar multiplicador estrella
-    nuevo_contenido += f'''# Multiplicador para programas estrella (valor > 1.0 aumenta la prioridad)
-# Ejemplo: 3.0 significa que los programas estrella valen 3x más en la optimización
-multiplicador_estrella = {multiplicador_estrella:.1f}
 
 '''
 
-    # Agregar pacientes actuales (mantener como ceros)
-    nuevo_contenido += f'pacientes_actuales = {[0] * len(programas_df)}\n\n\n'
+    # Escribir programas
+    contenido += "programas = {\n"
+    for prog_name, prog_data in programas_data.items():
+        contenido += f"    {repr(prog_name)}: {{\n"
+        contenido += f'        "duracion_dias": {prog_data["duracion_dias"]},\n'
+        contenido += f'        "prioridad": {prog_data["prioridad"]},\n'
+        contenido += '        "actividades": [\n'
 
-    # Agregar recursos profesionales
-    nuevo_contenido += '''# Recursos profesionales y físicos
-nom_rec_prof = [
+        for act in prog_data["actividades"]:
+            contenido += '            {\n'
+            contenido += f'                "nombre":        {repr(act["nombre"])},\n'
+            contenido += f'                "tipo":          {repr(act["tipo"])},\n'
+            contenido += f'                "cantidad":      {act["cantidad"]},\n'
+            contenido += f'                "duracion_min":  {act["duracion_min"]},\n'
+            contenido += f'                "recursos_prof": {repr(act["recursos_prof"])},\n'
+            rec_fis = repr(act["recurso_fis"]) if act["recurso_fis"] else "None"
+            contenido += f'                "recurso_fis":   {rec_fis},\n'
+            contenido += '            },\n'
+
+        contenido += '        ],\n'
+        contenido += '    },\n'
+    contenido += '}\n\n\n'
+
+    # Escribir recursos profesionales
+    contenido += "recursos_profesionales = [\n"
+    for rec in recursos_prof_data:
+        contenido += '    {\n'
+        contenido += f'        "departamento":            {repr(rec["departamento"])},\n'
+        contenido += f'        "nombre":                  {repr(rec["nombre"])},\n'
+        contenido += f'        "num_personas":            {rec["num_personas"]},\n'
+        contenido += f'        "cap_semanal_por_persona": {rec["cap_semanal_por_persona"]},\n'
+        contenido += f'        "cap_semanal_total":       {rec["cap_semanal_total"]},\n'
+        contenido += '    },\n'
+    contenido += ']\n\n\n'
+
+    # Escribir recursos físicos
+    contenido += "recursos_fisicos = [\n"
+    for rec in recursos_fis_data:
+        contenido += '    {\n'
+        contenido += f'        "departamento":            {repr(rec["departamento"])},\n'
+        contenido += f'        "nombre":                  {repr(rec["nombre"])},\n'
+        contenido += f'        "num_unidades":            {rec["num_unidades"]},\n'
+        contenido += f'        "cap_semanal_por_unidad":  {rec["cap_semanal_por_unidad"]},\n'
+        contenido += f'        "cap_semanal_total":       {rec["cap_semanal_total"]},\n'
+        contenido += '    },\n'
+    contenido += ']\n\n\n'
+
+    # Escribir helpers derivados
+    contenido += '''# ── Lookup helpers (derivados de las listas; NO editar manualmente) ──────────
+cap_rec_prof = {r["nombre"]: r["cap_semanal_total"] for r in recursos_profesionales}
+cap_rec_fis  = {r["nombre"]: r["cap_semanal_total"] for r in recursos_fisicos}
+
+nombres_programas = list(programas.keys())
+duraciones_dias   = {k: v["duracion_dias"] for k, v in programas.items()}
+prioridades       = {k: v["prioridad"]     for k, v in programas.items()}
 '''
-    for nombre in recursos_prof_df["Resource"].tolist():
-        nuevo_contenido += f'    "{nombre}",\n'
-    nuevo_contenido += ']\n'
-
-    nuevo_contenido += 'cap_rec_prof = [\n'
-    for cap in recursos_prof_df["Capacity (h/week)"].tolist():
-        nuevo_contenido += f'    {float(cap)},\n'
-    nuevo_contenido += ']\n\n'
-
-    # Agregar recursos físicos
-    nuevo_contenido += 'nom_rec_fis = [\n'
-    for nombre in recursos_fis_df["Resource"].tolist():
-        nuevo_contenido += f'    "{nombre}",\n'
-    nuevo_contenido += ']\n'
-
-    nuevo_contenido += 'cap_rec_fis = [\n'
-    for cap in recursos_fis_df["Capacity (h/week)"].tolist():
-        nuevo_contenido += f'    {float(cap)},\n'
-    nuevo_contenido += ']\n\n'
-
-    nuevo_contenido += 'nom_rec_total = nom_rec_prof + nom_rec_fis\n'
-    nuevo_contenido += 'cap_rec_total = cap_rec_prof + cap_rec_fis\n\n'
-
-    # Agregar matrices de consumo originales
-    if matrices_contenido:
-        nuevo_contenido += matrices_contenido
 
     # Guardar el archivo
     with open(archivo_path, "w", encoding="utf-8") as f:
-        f.write(nuevo_contenido)
+        f.write(contenido)
 
     return True
 
@@ -1406,93 +1418,69 @@ if st.session_state.admin_mode:
             "Changes will be saved permanently to the system."
         )
 
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # === SECCIÓN 1: PROGRAMAS DE TRATAMIENTO ===
-        st.markdown("#### Treatment Programs")
-        st.caption("Edit program names, priority weights, and star program status")
-
-        # Configuración del multiplicador estrella
-        col_mult1, col_mult2 = st.columns([2, 1])
-        with col_mult1:
-            st.markdown("**Star Program Multiplier**")
-            st.caption("Star programs receive this multiplier on their priority weight during optimization")
-        with col_mult2:
-            multiplicador_estrella = st.number_input(
-                "Multiplier",
-                min_value=1.0,
-                max_value=10.0,
-                value=float(datos_base["multiplicador_estrella"]),
-                step=0.5,
-                format="%.1f",
-                key="multiplicador_estrella_admin",
-                label_visibility="collapsed",
-            )
+        # Inicializar datos editables en session_state si no existen
+        if "admin_programas" not in st.session_state:
+            import copy
+            st.session_state.admin_programas = copy.deepcopy(datos_base["programas"])
+        if "admin_recursos_prof" not in st.session_state:
+            import copy
+            st.session_state.admin_recursos_prof = copy.deepcopy(datos_base["recursos_profesionales"])
+        if "admin_recursos_fis" not in st.session_state:
+            import copy
+            st.session_state.admin_recursos_fis = copy.deepcopy(datos_base["recursos_fisicos"])
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # Crear DataFrame para edición de programas
-        df_programas = pd.DataFrame({
-            "Program": datos_base["nombre_programas"],
-            "Priority": datos_base["prioridad_programas"],
-            "Star": datos_base["programas_estrella"],
-        })
-
-        df_programas_editado = st.data_editor(
-            df_programas,
-            column_config={
-                "Program": st.column_config.TextColumn(
-                    "Program Name",
-                    width="large",
-                    help="Name of the treatment program",
-                ),
-                "Priority": st.column_config.NumberColumn(
-                    "Priority Weight",
-                    min_value=0.0,
-                    max_value=10.0,
-                    step=0.01,
-                    format="%.2f",
-                    help="Priority weight (0-10). Higher values = higher priority",
-                ),
-                "Star": st.column_config.CheckboxColumn(
-                    "Star Program",
-                    help="Star programs receive priority multiplier during optimization",
-                    default=False,
-                ),
-            },
-            hide_index=True,
-            use_container_width=True,
-            num_rows="fixed",
-            key="editor_programas_admin",
-        )
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # === SECCIÓN 2: RECURSOS PROFESIONALES ===
+        # === SECCIÓN 1: RECURSOS PROFESIONALES ===
         st.markdown("#### Professional Resources")
-        st.caption("Edit resource names and their weekly capacity in hours")
+        st.caption("Edit number of people and capacity per person. Total capacity is calculated automatically.")
 
         # Crear DataFrame para edición de recursos profesionales
-        df_rec_prof = pd.DataFrame({
-            "Resource": datos_base["nombre_rec_prof"],
-            "Capacity (h/week)": datos_base["cap_rec_prof"],
-        })
+        df_rec_prof = pd.DataFrame([
+            {
+                "Department": rec["departamento"],
+                "Role": rec["nombre"],
+                "People": rec["num_personas"],
+                "Capacity/Person (h/week)": rec["cap_semanal_por_persona"],
+                "Total Capacity (h/week)": rec["num_personas"] * rec["cap_semanal_por_persona"],
+            }
+            for rec in st.session_state.admin_recursos_prof
+        ])
 
         df_rec_prof_editado = st.data_editor(
             df_rec_prof,
             column_config={
-                "Resource": st.column_config.TextColumn(
-                    "Resource Name",
-                    width="large",
-                    help="Name of the professional resource",
+                "Department": st.column_config.TextColumn(
+                    "Department",
+                    disabled=True,
+                    width="medium",
                 ),
-                "Capacity (h/week)": st.column_config.NumberColumn(
-                    "Weekly Capacity (hours)",
+                "Role": st.column_config.TextColumn(
+                    "Role",
+                    disabled=True,
+                    width="large",
+                ),
+                "People": st.column_config.NumberColumn(
+                    "# People",
+                    min_value=1,
+                    max_value=100,
+                    step=1,
+                    format="%d",
+                    help="Number of people in this role",
+                ),
+                "Capacity/Person (h/week)": st.column_config.NumberColumn(
+                    "Cap/Person (h)",
                     min_value=0.0,
-                    max_value=10000.0,
+                    max_value=200.0,
                     step=0.5,
+                    format="%.2f",
+                    help="Weekly capacity per person in hours",
+                ),
+                "Total Capacity (h/week)": st.column_config.NumberColumn(
+                    "Total Cap (h)",
+                    disabled=True,
                     format="%.1f",
-                    help="Available hours per week",
+                    help="Total = People × Capacity/Person (auto-calculated)",
                 ),
             },
             hide_index=True,
@@ -1501,33 +1489,67 @@ if st.session_state.admin_mode:
             key="editor_rec_prof_admin",
         )
 
+        # Actualizar session_state con cambios
+        for i, row in df_rec_prof_editado.iterrows():
+            st.session_state.admin_recursos_prof[i]["num_personas"] = safe_int(row["People"], default=1, min_val=1)
+            st.session_state.admin_recursos_prof[i]["cap_semanal_por_persona"] = safe_float(row["Capacity/Person (h/week)"], default=40.0, min_val=0.0)
+            st.session_state.admin_recursos_prof[i]["cap_semanal_total"] = (
+                st.session_state.admin_recursos_prof[i]["num_personas"] *
+                st.session_state.admin_recursos_prof[i]["cap_semanal_por_persona"]
+            )
+
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # === SECCIÓN 3: RECURSOS FÍSICOS ===
+        # === SECCIÓN 2: RECURSOS FÍSICOS ===
         st.markdown("#### Physical Resources")
-        st.caption("Edit resource names and their weekly capacity in hours")
+        st.caption("Edit number of units and capacity per unit. Total capacity is calculated automatically.")
 
         # Crear DataFrame para edición de recursos físicos
-        df_rec_fis = pd.DataFrame({
-            "Resource": datos_base["nombre_rec_fis"],
-            "Capacity (h/week)": datos_base["cap_rec_fis"],
-        })
+        df_rec_fis = pd.DataFrame([
+            {
+                "Department": rec["departamento"],
+                "Resource": rec["nombre"],
+                "Units": rec["num_unidades"],
+                "Capacity/Unit (h/week)": rec["cap_semanal_por_unidad"],
+                "Total Capacity (h/week)": rec["num_unidades"] * rec["cap_semanal_por_unidad"],
+            }
+            for rec in st.session_state.admin_recursos_fis
+        ])
 
         df_rec_fis_editado = st.data_editor(
             df_rec_fis,
             column_config={
-                "Resource": st.column_config.TextColumn(
-                    "Resource Name",
-                    width="large",
-                    help="Name of the physical resource",
+                "Department": st.column_config.TextColumn(
+                    "Department",
+                    disabled=True,
+                    width="medium",
                 ),
-                "Capacity (h/week)": st.column_config.NumberColumn(
-                    "Weekly Capacity (hours)",
+                "Resource": st.column_config.TextColumn(
+                    "Resource",
+                    disabled=True,
+                    width="large",
+                ),
+                "Units": st.column_config.NumberColumn(
+                    "# Units",
+                    min_value=1,
+                    max_value=100,
+                    step=1,
+                    format="%d",
+                    help="Number of units available",
+                ),
+                "Capacity/Unit (h/week)": st.column_config.NumberColumn(
+                    "Cap/Unit (h)",
                     min_value=0.0,
-                    max_value=10000.0,
+                    max_value=500.0,
                     step=0.5,
+                    format="%.2f",
+                    help="Weekly capacity per unit in hours",
+                ),
+                "Total Capacity (h/week)": st.column_config.NumberColumn(
+                    "Total Cap (h)",
+                    disabled=True,
                     format="%.1f",
-                    help="Available hours per week",
+                    help="Total = Units × Capacity/Unit (auto-calculated)",
                 ),
             },
             hide_index=True,
@@ -1536,17 +1558,145 @@ if st.session_state.admin_mode:
             key="editor_rec_fis_admin",
         )
 
+        # Actualizar session_state con cambios
+        for i, row in df_rec_fis_editado.iterrows():
+            st.session_state.admin_recursos_fis[i]["num_unidades"] = safe_int(row["Units"], default=1, min_val=1)
+            st.session_state.admin_recursos_fis[i]["cap_semanal_por_unidad"] = safe_float(row["Capacity/Unit (h/week)"], default=40.0, min_val=0.0)
+            st.session_state.admin_recursos_fis[i]["cap_semanal_total"] = (
+                st.session_state.admin_recursos_fis[i]["num_unidades"] *
+                st.session_state.admin_recursos_fis[i]["cap_semanal_por_unidad"]
+            )
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # === SECCIÓN 3: PROGRAMAS Y ACTIVIDADES ===
+        st.markdown("#### Programs and Activities")
+        st.caption("Select a program to edit its duration and activities")
+
+        # Selector de programa
+        programa_nombres = list(st.session_state.admin_programas.keys())
+        programa_seleccionado = st.selectbox(
+            "Select Program:",
+            options=programa_nombres,
+            key="admin_programa_selector",
+        )
+
+        if programa_seleccionado:
+            prog_data = st.session_state.admin_programas[programa_seleccionado]
+
+            # Editar duración del programa
+            col_dur1, col_dur2 = st.columns([2, 1])
+            with col_dur1:
+                st.markdown(f"**Program Duration**")
+                st.caption("Number of days for the treatment program")
+            with col_dur2:
+                nueva_duracion = st.number_input(
+                    "Duration (days)",
+                    min_value=1,
+                    max_value=90,
+                    value=prog_data["duracion_dias"],
+                    step=1,
+                    key=f"duracion_{programa_seleccionado}",
+                    label_visibility="collapsed",
+                )
+                st.session_state.admin_programas[programa_seleccionado]["duracion_dias"] = nueva_duracion
+
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            # Tabla de actividades
+            st.markdown(f"**Activities for {programa_seleccionado}**")
+            st.caption("Edit quantity and duration of activities. Professional and physical resources must match existing resource names.")
+
+            # Obtener listas de recursos válidos para validación
+            recursos_prof_validos = [r["nombre"] for r in st.session_state.admin_recursos_prof]
+            recursos_fis_validos = [r["nombre"] for r in st.session_state.admin_recursos_fis]
+
+            # Crear DataFrame de actividades
+            df_actividades = pd.DataFrame([
+                {
+                    "Activity": act["nombre"],
+                    "Type": act["tipo"],
+                    "Quantity": act["cantidad"],
+                    "Duration (min)": act["duracion_min"],
+                    "Prof. Resources": ", ".join(act["recursos_prof"]) if act["recursos_prof"] else "",
+                    "Physical Resource": act["recurso_fis"] if act["recurso_fis"] else "",
+                }
+                for act in prog_data["actividades"]
+            ])
+
+            df_actividades_editado = st.data_editor(
+                df_actividades,
+                column_config={
+                    "Activity": st.column_config.TextColumn(
+                        "Activity",
+                        disabled=True,
+                        width="large",
+                    ),
+                    "Type": st.column_config.TextColumn(
+                        "Type",
+                        disabled=True,
+                        width="small",
+                    ),
+                    "Quantity": st.column_config.NumberColumn(
+                        "Qty",
+                        min_value=0,
+                        max_value=100,
+                        step=1,
+                        format="%d",
+                        help="Number of times this activity occurs during the program",
+                    ),
+                    "Duration (min)": st.column_config.NumberColumn(
+                        "Duration (min)",
+                        min_value=1,
+                        max_value=1440,
+                        step=5,
+                        format="%d",
+                        help="Duration of each session in minutes",
+                    ),
+                    "Prof. Resources": st.column_config.TextColumn(
+                        "Prof. Resources",
+                        help=f"Comma-separated list. Valid: {', '.join(recursos_prof_validos[:5])}...",
+                        width="large",
+                    ),
+                    "Physical Resource": st.column_config.SelectboxColumn(
+                        "Physical Resource",
+                        options=[""] + recursos_fis_validos,
+                        help="Select a physical resource or leave empty for None",
+                        width="medium",
+                    ),
+                },
+                hide_index=True,
+                use_container_width=True,
+                num_rows="fixed",
+                key=f"editor_actividades_{programa_seleccionado}",
+            )
+
+            # Actualizar session_state con cambios en actividades
+            for i, row in df_actividades_editado.iterrows():
+                st.session_state.admin_programas[programa_seleccionado]["actividades"][i]["cantidad"] = safe_int(row["Quantity"], default=1, min_val=0)
+                st.session_state.admin_programas[programa_seleccionado]["actividades"][i]["duracion_min"] = safe_int(row["Duration (min)"], default=30, min_val=1)
+
+                # Parsear recursos profesionales (comma-separated)
+                prof_resources_str = safe_string(row["Prof. Resources"], default="")
+                if prof_resources_str:
+                    prof_list = [r.strip() for r in prof_resources_str.split(",") if r.strip()]
+                    st.session_state.admin_programas[programa_seleccionado]["actividades"][i]["recursos_prof"] = prof_list
+                else:
+                    st.session_state.admin_programas[programa_seleccionado]["actividades"][i]["recursos_prof"] = []
+
+                # Recurso físico
+                phys_resource = safe_string(row["Physical Resource"], default="")
+                st.session_state.admin_programas[programa_seleccionado]["actividades"][i]["recurso_fis"] = phys_resource if phys_resource else None
+
         st.markdown("<br>", unsafe_allow_html=True)
 
         # === BOTÓN GUARDAR CON CONFIRMACIÓN ===
-        # Inicializar estado de confirmación
         if "confirmar_guardado" not in st.session_state:
             st.session_state.confirmar_guardado = False
 
         col_save1, col_save2, col_save3 = st.columns([1, 2, 1])
 
         if not st.session_state.confirmar_guardado:
-            # Paso 1: Botón inicial para guardar
             with col_save2:
                 guardar_btn = st.button(
                     "💾 Save All Changes",
@@ -1554,48 +1704,9 @@ if st.session_state.admin_mode:
                     use_container_width=True,
                 )
             if guardar_btn:
-                # Sanitizar todos los datos antes de preparar para guardar
-                multiplicador_validado = safe_float(multiplicador_estrella, default=3.0, min_val=1.0, max_val=10.0)
-
-                programas_sanitizados = sanitize_programs_dataframe(
-                    df_programas_editado,
-                    datos_base["nombre_programas"]
-                )
-
-                recursos_prof_sanitizados = sanitize_resources_dataframe(
-                    df_rec_prof_editado,
-                    datos_base["nombre_rec_prof"],
-                    datos_base["cap_rec_prof"]
-                )
-
-                recursos_fis_sanitizados = sanitize_resources_dataframe(
-                    df_rec_fis_editado,
-                    datos_base["nombre_rec_fis"],
-                    datos_base["cap_rec_fis"]
-                )
-
-                # Validar antes de continuar
-                is_valid, errors = validate_before_save(
-                    programas_sanitizados,
-                    recursos_prof_sanitizados,
-                    recursos_fis_sanitizados,
-                    multiplicador_validado
-                )
-
-                if not is_valid:
-                    for error in errors:
-                        st.error(f"Validation error: {error}")
-                else:
-                    st.session_state.confirmar_guardado = True
-                    st.session_state.datos_a_guardar = {
-                        "programas": programas_sanitizados,
-                        "rec_prof": recursos_prof_sanitizados,
-                        "rec_fis": recursos_fis_sanitizados,
-                        "multiplicador_estrella": multiplicador_validado,
-                    }
-                    st.rerun()
+                st.session_state.confirmar_guardado = True
+                st.rerun()
         else:
-            # Paso 2: Confirmación
             st.markdown("""
             <div style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border: 2px solid #F59E0B; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem;">
                 <div style="display: flex; align-items: flex-start; gap: 12px;">
@@ -1630,14 +1741,16 @@ if st.session_state.admin_mode:
             if confirmar_btn:
                 with st.spinner("Saving changes..."):
                     try:
-                        datos = st.session_state.datos_a_guardar
                         guardar_datos_sanoviv(
-                            datos["programas"],
-                            datos["rec_prof"],
-                            datos["rec_fis"],
-                            datos["multiplicador_estrella"]
+                            st.session_state.admin_programas,
+                            st.session_state.admin_recursos_prof,
+                            st.session_state.admin_recursos_fis,
                         )
                         st.session_state.confirmar_guardado = False
+                        # Limpiar datos de admin para recargar desde archivo
+                        del st.session_state.admin_programas
+                        del st.session_state.admin_recursos_prof
+                        del st.session_state.admin_recursos_fis
                         st.success("✅ Changes saved successfully. Restart the application to see the updated data.")
                         st.balloons()
                     except Exception as e:
