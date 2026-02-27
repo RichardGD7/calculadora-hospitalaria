@@ -1127,15 +1127,6 @@ with tab3:
                 else:
                     tabla_fis.append(row)
 
-            # Filtro compartido
-            col_filter1, col_filter2 = st.columns(2)
-            with col_filter1:
-                filtro_uso = st.selectbox(
-                    "Filter by usage level:",
-                    ["All", "High (>80%)", "Medium (50-80%)", "Low (<50%)"],
-                    key="filtro_recursos",
-                )
-
             _col_config_recursos = {
                 "Resource": st.column_config.TextColumn("Resource", width="medium"),
                 "Capacity (h)": st.column_config.NumberColumn("Capacity", format="%.1f"),
@@ -1157,20 +1148,11 @@ with tab3:
                 "Status": st.column_config.TextColumn("Status", width="small"),
             }
 
-            def _filtrar_recursos(df):
-                if filtro_uso == "High (>80%)":
-                    return df[df["Total Usage (%)"] >= 80]
-                elif filtro_uso == "Medium (50-80%)":
-                    return df[(df["Total Usage (%)"] >= 50) & (df["Total Usage (%)"] < 80)]
-                elif filtro_uso == "Low (<50%)":
-                    return df[df["Total Usage (%)"] < 50]
-                return df
-
             # ── Professional Resources ───────────────────────────────────────
             st.markdown('<div class="section-header">Professional Resources</div>', unsafe_allow_html=True)
 
             if tabla_prof:
-                df_prof = _filtrar_recursos(pd.DataFrame(tabla_prof))
+                df_prof = pd.DataFrame(tabla_prof)
                 st.dataframe(
                     df_prof,
                     column_config=_col_config_recursos,
@@ -1186,7 +1168,7 @@ with tab3:
             st.markdown('<div class="section-header">Physical Resources</div>', unsafe_allow_html=True)
 
             if tabla_fis:
-                df_fis = _filtrar_recursos(pd.DataFrame(tabla_fis))
+                df_fis = pd.DataFrame(tabla_fis)
                 st.dataframe(
                     df_fis,
                     column_config=_col_config_recursos,
