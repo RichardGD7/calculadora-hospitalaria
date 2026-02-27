@@ -1106,14 +1106,13 @@ with tab3:
     if st.session_state.resultados is not None and st.session_state.resultados["estado"] == "Optimal":
         resultados = st.session_state.resultados
 
-        st.markdown('<div class="section-header">Resource Utilization Detail</div>', unsafe_allow_html=True)
-
         if resultados["tabla_recursos"]:
-            # Preparar datos para la tabla
-            tabla_data = []
+            # Preparar datos separados por tipo
+            tabla_prof = []
+            tabla_fis = []
             for rec in resultados["tabla_recursos"]:
                 estado = "✅ OK" if rec["ok"] else "⛔ Exceeded"
-                tabla_data.append({
+                row = {
                     "Resource": rec["nombre"],
                     "Capacity (h)": rec["capacidad"],
                     "Current Usage (h)": rec["uso_actual"],
@@ -1122,51 +1121,80 @@ with tab3:
                     "Total Usage (h)": rec["uso_total"],
                     "Total Usage (%)": rec["pct_total"],
                     "Status": estado,
-                })
+                }
+                if rec["tipo"] == "profesional":
+                    tabla_prof.append(row)
+                else:
+                    tabla_fis.append(row)
 
-            df_recursos = pd.DataFrame(tabla_data)
-
-            # Filtros
+            # Filtro compartido
             col_filter1, col_filter2 = st.columns(2)
             with col_filter1:
                 filtro_uso = st.selectbox(
                     "Filter by usage level:",
                     ["All", "High (>80%)", "Medium (50-80%)", "Low (<50%)"],
+                    key="filtro_recursos",
                 )
 
-            # Aplicar filtro
-            if filtro_uso == "High (>80%)":
-                df_recursos = df_recursos[df_recursos["Total Usage (%)"] >= 80]
-            elif filtro_uso == "Medium (50-80%)":
-                df_recursos = df_recursos[(df_recursos["Total Usage (%)"] >= 50) & (df_recursos["Total Usage (%)"] < 80)]
-            elif filtro_uso == "Low (<50%)":
-                df_recursos = df_recursos[df_recursos["Total Usage (%)"] < 50]
+            _col_config_recursos = {
+                "Resource": st.column_config.TextColumn("Resource", width="medium"),
+                "Capacity (h)": st.column_config.NumberColumn("Capacity", format="%.1f"),
+                "Current Usage (h)": st.column_config.NumberColumn("Current Usage", format="%.1f"),
+                "Current Usage (%)": st.column_config.ProgressColumn(
+                    "% Current",
+                    min_value=0,
+                    max_value=100,
+                    format="%.1f%%",
+                ),
+                "Additional Usage (h)": st.column_config.NumberColumn("Add. Usage", format="%.1f"),
+                "Total Usage (h)": st.column_config.NumberColumn("Total Usage", format="%.1f"),
+                "Total Usage (%)": st.column_config.ProgressColumn(
+                    "% Total",
+                    min_value=0,
+                    max_value=100,
+                    format="%.1f%%",
+                ),
+                "Status": st.column_config.TextColumn("Status", width="small"),
+            }
 
-            st.dataframe(
-                df_recursos,
-                column_config={
-                    "Resource": st.column_config.TextColumn("Resource", width="medium"),
-                    "Capacity (h)": st.column_config.NumberColumn("Capacity", format="%.1f"),
-                    "Current Usage (h)": st.column_config.NumberColumn("Current Usage", format="%.1f"),
-                    "Current Usage (%)": st.column_config.ProgressColumn(
-                        "% Current",
-                        min_value=0,
-                        max_value=100,
-                        format="%.1f%%",
-                    ),
-                    "Additional Usage (h)": st.column_config.NumberColumn("Add. Usage", format="%.1f"),
-                    "Total Usage (h)": st.column_config.NumberColumn("Total Usage", format="%.1f"),
-                    "Total Usage (%)": st.column_config.ProgressColumn(
-                        "% Total",
-                        min_value=0,
-                        max_value=100,
-                        format="%.1f%%",
-                    ),
-                    "Status": st.column_config.TextColumn("Status", width="small"),
-                },
-                hide_index=True,
-                use_container_width=True,
-            )
+            def _filtrar_recursos(df):
+                if filtro_uso == "High (>80%)":
+                    return df[df["Total Usage (%)"] >= 80]
+                elif filtro_uso == "Medium (50-80%)":
+                    return df[(df["Total Usage (%)"] >= 50) & (df["Total Usage (%)"] < 80)]
+                elif filtro_uso == "Low (<50%)":
+                    return df[df["Total Usage (%)"] < 50]
+                return df
+
+            # ── Professional Resources ───────────────────────────────────────
+            st.markdown('<div class="section-header">Professional Resources</div>', unsafe_allow_html=True)
+
+            if tabla_prof:
+                df_prof = _filtrar_recursos(pd.DataFrame(tabla_prof))
+                st.dataframe(
+                    df_prof,
+                    column_config=_col_config_recursos,
+                    hide_index=True,
+                    use_container_width=True,
+                )
+            else:
+                st.info("No professional resources to display.")
+
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            # ── Physical Resources ───────────────────────────────────────────
+            st.markdown('<div class="section-header">Physical Resources</div>', unsafe_allow_html=True)
+
+            if tabla_fis:
+                df_fis = _filtrar_recursos(pd.DataFrame(tabla_fis))
+                st.dataframe(
+                    df_fis,
+                    column_config=_col_config_recursos,
+                    hide_index=True,
+                    use_container_width=True,
+                )
+            else:
+                st.info("No physical resources to display.")
 
         # Recursos excedidos
         if resultados["recursos_excedidos"]:
