@@ -168,6 +168,7 @@ def obtener_datos_base() -> dict:
         "recursos_profesionales": datos.recursos_profesionales,
         "recursos_fisicos":       datos.recursos_fisicos,
         "programas":              datos.programas,
+        "catalogo_actividades":   datos.catalogo_actividades,
         "duraciones_dias":        md["duraciones_dias"],
         # Campos de compatibilidad (programas estrella ya no se usan aquí)
         "programas_estrella":     [False] * md["n_programas"],

@@ -6,6 +6,8 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import os
+import copy
+import importlib
 import numpy as np
 from optimizador_v2 import obtener_datos_base, ejecutar_optimizacion, verificar_admision
 import BD_sanoviv as datos
@@ -189,49 +191,65 @@ def sanitize_resources_dataframe(df, original_names, original_capacities):
     return pd.DataFrame(sanitized_data)
 
 
-def validate_before_save(programas_df, recursos_prof_df, recursos_fis_df, multiplicador):
+def validate_before_save(admin_programas, admin_catalogo, recursos_prof, recursos_fis):
     """
     Valida todos los datos antes de guardar. Retorna (is_valid, error_messages).
     """
     errors = []
 
-    # Validar multiplicador
-    if not (1.0 <= multiplicador <= 10.0):
-        errors.append(f"Star multiplier must be between 1.0 and 10.0 (got {multiplicador})")
+    cat_names = {a["nombre"] for a in admin_catalogo}
+    prof_names = {r["nombre"] for r in recursos_prof}
+    fis_names = {r["nombre"] for r in recursos_fis}
+
+    # Validar catálogo: no duplicados
+    seen_names = set()
+    for act in admin_catalogo:
+        if act["nombre"] in seen_names:
+            errors.append(f"Duplicate activity name in catalog: '{act['nombre']}'")
+        seen_names.add(act["nombre"])
+        # Validar recursos referenciados existen
+        for rp in act.get("recursos_prof", []):
+            if rp not in prof_names:
+                errors.append(f"Activity '{act['nombre']}' references unknown professional resource: '{rp}'")
+        rf = act.get("recurso_fis")
+        if rf and rf not in fis_names:
+            errors.append(f"Activity '{act['nombre']}' references unknown physical resource: '{rf}'")
 
     # Validar programas
-    for i, row in programas_df.iterrows():
-        prog_name = row.get("Program", f"Program {i+1}")
-        priority = row.get("Priority", 0)
-        if not isinstance(priority, (int, float)) or priority < 0 or priority > 10:
-            errors.append(f"Invalid priority for '{prog_name}': must be 0-10")
-
-    # Validar recursos profesionales
-    for i, row in recursos_prof_df.iterrows():
-        res_name = row.get("Resource", f"Resource {i+1}")
-        cap = row.get("Capacity (h/week)", 0)
-        if not isinstance(cap, (int, float)) or cap < 0:
-            errors.append(f"Invalid capacity for '{res_name}': must be >= 0")
-
-    # Validar recursos físicos
-    for i, row in recursos_fis_df.iterrows():
-        res_name = row.get("Resource", f"Resource {i+1}")
-        cap = row.get("Capacity (h/week)", 0)
-        if not isinstance(cap, (int, float)) or cap < 0:
-            errors.append(f"Invalid capacity for '{res_name}': must be >= 0")
+    base_programs = {k for k, v in admin_programas.items() if v.get("tipo") == "programa"}
+    for prog_name, prog_data in admin_programas.items():
+        # Prioridad >= 1
+        if prog_data.get("prioridad", 0) < 1:
+            errors.append(f"Program '{prog_name}': priority must be >= 1")
+        # Al menos 1 actividad
+        if not prog_data.get("actividades"):
+            errors.append(f"Program '{prog_name}': must have at least 1 activity")
+        # Actividades existen en catálogo
+        for act in prog_data.get("actividades", []):
+            if act["nombre"] not in cat_names:
+                errors.append(f"Program '{prog_name}': activity '{act['nombre']}' not found in catalog")
+        # Extensiones referencian programa base existente
+        if prog_data.get("tipo") == "extension":
+            pb = prog_data.get("programa_base", "")
+            if pb not in base_programs:
+                errors.append(f"Extension '{prog_name}': base program '{pb}' does not exist")
 
     return len(errors) == 0, errors
 
 
-def guardar_datos_sanoviv(programas_data, recursos_prof_data, recursos_fis_data):
+def guardar_datos_sanoviv(programas_data, recursos_prof_data, recursos_fis_data, catalogo_data):
     """Guarda los datos editados en el archivo BD_sanoviv.py.
 
     Args:
         programas_data: dict con la estructura completa de programas
         recursos_prof_data: list[dict] con recursos profesionales
         recursos_fis_data: list[dict] con recursos físicos
+        catalogo_data: list[dict] con el catálogo maestro de actividades
     """
     archivo_path = os.path.join(os.path.dirname(__file__), "BD_sanoviv.py")
+
+    # Build catalog lookup for hydrating program activities
+    cat_lookup = {a["nombre"]: a for a in catalogo_data}
 
     # Construir el contenido del archivo
     contenido = '''"""
@@ -239,6 +257,14 @@ datos_sanoviv.py — Fuente única de verdad para la Calculadora de Capacidad Sa
 
 ESTRUCTURA DE DATOS
 ===================
+catalogo_actividades : list[dict]
+    Catálogo maestro de actividades. Cada entrada tiene:
+        nombre          : str
+        tipo            : str   (Consulta / Terapia / Estudio / Otro / Other)
+        duracion_min    : int   (minutos por sesión)
+        recursos_prof   : list[str]   (nombres exactos de recursos profesionales)
+        recurso_fis     : str | None  (nombre exacto de recurso físico, o None)
+
 programas : dict[str, dict]
     Cada programa tiene:
         duracion_dias   : int
@@ -246,12 +272,12 @@ programas : dict[str, dict]
         tipo            : str   ("programa" | "extension")
         programa_base   : str   (solo en extensiones — nombre del programa base)
         actividades     : list[dict]
-            nombre          : str
-            tipo            : str   (Consulta / Terapia / Estudio / Otro)
+            nombre          : str   (debe existir en catalogo_actividades)
+            tipo            : str   (heredado del catálogo)
             cantidad        : int   (ocurrencias por estancia completa)
-            duracion_min    : int   (minutos por sesión)
-            recursos_prof   : list[str]   (nombres exactos de recursos profesionales)
-            recurso_fis     : str | None  (nombre exacto de recurso físico, o None)
+            duracion_min    : int   (heredado del catálogo)
+            recursos_prof   : list[str]   (heredado del catálogo)
+            recurso_fis     : str | None  (heredado del catálogo)
 
 recursos_profesionales : list[dict]
     departamento, nombre, num_personas,
@@ -269,7 +295,20 @@ consumo_semanal_h = (cantidad * duracion_min / 60) / (duracion_dias / 7)
 
 '''
 
-    # Escribir programas
+    # Escribir catálogo de actividades
+    contenido += "catalogo_actividades = [\n"
+    for act in sorted(catalogo_data, key=lambda x: x["nombre"]):
+        contenido += '    {\n'
+        contenido += f'        "nombre":        {repr(act["nombre"])},\n'
+        contenido += f'        "tipo":          {repr(act["tipo"])},\n'
+        contenido += f'        "duracion_min":  {act["duracion_min"]},\n'
+        contenido += f'        "recursos_prof": {repr(act["recursos_prof"])},\n'
+        rec_fis = repr(act["recurso_fis"]) if act["recurso_fis"] else "None"
+        contenido += f'        "recurso_fis":   {rec_fis},\n'
+        contenido += '    },\n'
+    contenido += ']\n\n\n'
+
+    # Escribir programas (hydrating activities from catalog)
     contenido += "programas = {\n"
     for prog_name, prog_data in programas_data.items():
         contenido += f"    {repr(prog_name)}: {{\n"
@@ -281,13 +320,16 @@ consumo_semanal_h = (cantidad * duracion_min / 60) / (duracion_dias / 7)
         contenido += '        "actividades": [\n'
 
         for act in prog_data["actividades"]:
+            act_name = act["nombre"]
+            # Hydrate from catalog if available; otherwise use act's own data
+            canon = cat_lookup.get(act_name, act)
             contenido += '            {\n'
-            contenido += f'                "nombre":        {repr(act["nombre"])},\n'
-            contenido += f'                "tipo":          {repr(act["tipo"])},\n'
+            contenido += f'                "nombre":        {repr(act_name)},\n'
+            contenido += f'                "tipo":          {repr(canon["tipo"])},\n'
             contenido += f'                "cantidad":      {act["cantidad"]},\n'
-            contenido += f'                "duracion_min":  {act["duracion_min"]},\n'
-            contenido += f'                "recursos_prof": {repr(act["recursos_prof"])},\n'
-            rec_fis = repr(act["recurso_fis"]) if act["recurso_fis"] else "None"
+            contenido += f'                "duracion_min":  {canon["duracion_min"]},\n'
+            contenido += f'                "recursos_prof": {repr(canon["recursos_prof"])},\n'
+            rec_fis = repr(canon["recurso_fis"]) if canon["recurso_fis"] else "None"
             contenido += f'                "recurso_fis":   {rec_fis},\n'
             contenido += '            },\n'
 
@@ -327,6 +369,8 @@ cap_rec_fis  = {r["nombre"]: r["cap_semanal_total"] for r in recursos_fisicos}
 nombres_programas = list(programas.keys())
 duraciones_dias   = {k: v["duracion_dias"] for k, v in programas.items()}
 prioridades       = {k: v["prioridad"]     for k, v in programas.items()}
+
+catalogo_por_nombre = {a["nombre"]: a for a in catalogo_actividades}
 '''
 
     # Guardar el archivo
@@ -1480,311 +1524,448 @@ if st.session_state.admin_mode:
     with tab5:
         st.markdown('<div class="section-header">System Configuration</div>', unsafe_allow_html=True)
         st.markdown(
-            "Edit treatment programs, professional resources, and physical resources. "
-            "Changes will be saved permanently to the system."
+            "Edit treatment programs, professional resources, physical resources, "
+            "and the activity catalog. Changes will be saved permanently to the system."
         )
 
         # Inicializar datos editables en session_state si no existen
         if "admin_programas" not in st.session_state:
-            import copy
             st.session_state.admin_programas = copy.deepcopy(datos_base["programas"])
         if "admin_recursos_prof" not in st.session_state:
-            import copy
             st.session_state.admin_recursos_prof = copy.deepcopy(datos_base["recursos_profesionales"])
         if "admin_recursos_fis" not in st.session_state:
-            import copy
             st.session_state.admin_recursos_fis = copy.deepcopy(datos_base["recursos_fisicos"])
+        if "admin_catalogo" not in st.session_state:
+            st.session_state.admin_catalogo = copy.deepcopy(datos_base["catalogo_actividades"])
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # === SECCIÓN 1: RECURSOS PROFESIONALES ===
-        st.markdown("#### Professional Resources")
-        st.caption("Edit number of people and capacity per person. Total capacity is calculated automatically.")
-
-        # Crear DataFrame para edición de recursos profesionales
-        df_rec_prof = pd.DataFrame([
-            {
-                "Department": rec["departamento"],
-                "Role": rec["nombre"],
-                "People": rec["num_personas"],
-                "Capacity/Person (h/week)": rec["cap_semanal_por_persona"],
-                "Total Capacity (h/week)": rec["num_personas"] * rec["cap_semanal_por_persona"],
-            }
-            for rec in st.session_state.admin_recursos_prof
+        # === 3 SUB-TABS ===
+        subtab_recursos, subtab_actividades, subtab_programas = st.tabs([
+            "Resources", "Activities", "Programs"
         ])
 
-        df_rec_prof_editado = st.data_editor(
-            df_rec_prof,
-            column_config={
-                "Department": st.column_config.TextColumn(
-                    "Department",
-                    disabled=True,
-                    width="medium",
-                ),
-                "Role": st.column_config.TextColumn(
-                    "Role",
-                    disabled=True,
-                    width="large",
-                ),
-                "People": st.column_config.NumberColumn(
-                    "# People",
-                    min_value=1,
-                    max_value=100,
-                    step=1,
-                    format="%d",
-                    help="Number of people in this role",
-                ),
-                "Capacity/Person (h/week)": st.column_config.NumberColumn(
-                    "Cap/Person (h/week)",
-                    min_value=0.0,
-                    max_value=200.0,
-                    step=0.5,
-                    format="%.2f",
-                    help="Weekly capacity per person in hours",
-                ),
-                "Total Capacity (h/week)": st.column_config.NumberColumn(
-                    "Total Cap (h/week)",
-                    disabled=True,
-                    format="%.1f",
-                    help="Total = People × Capacity/Person (auto-calculated)",
-                ),
-            },
-            hide_index=True,
-            use_container_width=True,
-            num_rows="fixed",
-            key="editor_rec_prof_admin",
-        )
+        # ─────────────────────────────────────────────────
+        # SUB-TAB 1: RECURSOS
+        # ─────────────────────────────────────────────────
+        with subtab_recursos:
+            st.markdown("#### Professional Resources")
+            st.caption("Edit number of people and capacity per person. Total capacity is calculated automatically.")
 
-        # Actualizar session_state con cambios
-        for i, row in df_rec_prof_editado.iterrows():
-            st.session_state.admin_recursos_prof[i]["num_personas"] = safe_int(row["People"], default=1, min_val=1)
-            st.session_state.admin_recursos_prof[i]["cap_semanal_por_persona"] = safe_float(row["Capacity/Person (h/week)"], default=40.0, min_val=0.0)
-            st.session_state.admin_recursos_prof[i]["cap_semanal_total"] = (
-                st.session_state.admin_recursos_prof[i]["num_personas"] *
-                st.session_state.admin_recursos_prof[i]["cap_semanal_por_persona"]
+            df_rec_prof = pd.DataFrame([
+                {
+                    "Department": rec["departamento"],
+                    "Role": rec["nombre"],
+                    "People": rec["num_personas"],
+                    "Capacity/Person (h/week)": rec["cap_semanal_por_persona"],
+                    "Total Capacity (h/week)": rec["num_personas"] * rec["cap_semanal_por_persona"],
+                }
+                for rec in st.session_state.admin_recursos_prof
+            ])
+
+            df_rec_prof_editado = st.data_editor(
+                df_rec_prof,
+                column_config={
+                    "Department": st.column_config.TextColumn("Department", disabled=True, width="medium"),
+                    "Role": st.column_config.TextColumn("Role", disabled=True, width="large"),
+                    "People": st.column_config.NumberColumn("# People", min_value=1, max_value=100, step=1, format="%d"),
+                    "Capacity/Person (h/week)": st.column_config.NumberColumn("Cap/Person (h/week)", min_value=0.0, max_value=200.0, step=0.5, format="%.2f"),
+                    "Total Capacity (h/week)": st.column_config.NumberColumn("Total Cap (h/week)", disabled=True, format="%.1f"),
+                },
+                hide_index=True, use_container_width=True, num_rows="fixed",
+                key="editor_rec_prof_admin",
             )
 
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # === SECCIÓN 2: RECURSOS FÍSICOS ===
-        st.markdown("#### Physical Resources")
-        st.caption("Edit number of units and capacity per unit. Total capacity is calculated automatically.")
-
-        # Crear DataFrame para edición de recursos físicos
-        df_rec_fis = pd.DataFrame([
-            {
-                "Department": rec["departamento"],
-                "Resource": rec["nombre"],
-                "Units": rec["num_unidades"],
-                "Capacity/Unit (h/week)": rec["cap_semanal_por_unidad"],
-                "Total Capacity (h/week)": rec["num_unidades"] * rec["cap_semanal_por_unidad"],
-            }
-            for rec in st.session_state.admin_recursos_fis
-        ])
-
-        df_rec_fis_editado = st.data_editor(
-            df_rec_fis,
-            column_config={
-                "Department": st.column_config.TextColumn(
-                    "Department",
-                    disabled=True,
-                    width="medium",
-                ),
-                "Resource": st.column_config.TextColumn(
-                    "Resource",
-                    disabled=True,
-                    width="large",
-                ),
-                "Units": st.column_config.NumberColumn(
-                    "# Units",
-                    min_value=1,
-                    max_value=100,
-                    step=1,
-                    format="%d",
-                    help="Number of units available",
-                ),
-                "Capacity/Unit (h/week)": st.column_config.NumberColumn(
-                    "Cap/Unit (h/week)",
-                    min_value=0.0,
-                    max_value=500.0,
-                    step=0.5,
-                    format="%.2f",
-                    help="Weekly capacity per unit in hours",
-                ),
-                "Total Capacity (h/week)": st.column_config.NumberColumn(
-                    "Total Cap (h/week)",
-                    disabled=True,
-                    format="%.1f",
-                    help="Total = Units × Capacity/Unit (auto-calculated)",
-                ),
-            },
-            hide_index=True,
-            use_container_width=True,
-            num_rows="fixed",
-            key="editor_rec_fis_admin",
-        )
-
-        # Actualizar session_state con cambios
-        for i, row in df_rec_fis_editado.iterrows():
-            st.session_state.admin_recursos_fis[i]["num_unidades"] = safe_int(row["Units"], default=1, min_val=1)
-            st.session_state.admin_recursos_fis[i]["cap_semanal_por_unidad"] = safe_float(row["Capacity/Unit (h/week)"], default=40.0, min_val=0.0)
-            st.session_state.admin_recursos_fis[i]["cap_semanal_total"] = (
-                st.session_state.admin_recursos_fis[i]["num_unidades"] *
-                st.session_state.admin_recursos_fis[i]["cap_semanal_por_unidad"]
-            )
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # === SECCIÓN 3: PROGRAMAS Y ACTIVIDADES ===
-        st.markdown("#### Programs and Activities")
-        st.caption("Select a program to edit its duration and activities")
-
-        # Selector de programa (agrupado: base programs primero, luego extensions)
-        programa_nombres = list(st.session_state.admin_programas.keys())
-        _admin_base = [n for n in programa_nombres if st.session_state.admin_programas[n].get("tipo") == "programa"]
-        _admin_ext = [n for n in programa_nombres if st.session_state.admin_programas[n].get("tipo") == "extension"]
-        _admin_opciones = _admin_base + _admin_ext
-
-        def _fmt_admin_programa(name):
-            prog = st.session_state.admin_programas[name]
-            if prog.get("tipo") == "extension":
-                return f"  \u21b3 {name}  ({prog.get('programa_base', '')})"
-            return name
-
-        programa_seleccionado = st.selectbox(
-            "Select Program:",
-            options=_admin_opciones,
-            format_func=_fmt_admin_programa,
-            key="admin_programa_selector",
-        )
-
-        if programa_seleccionado:
-            prog_data = st.session_state.admin_programas[programa_seleccionado]
-
-            # Editar duración del programa
-            col_dur1, col_dur2 = st.columns([2, 1])
-            with col_dur1:
-                st.markdown(f"**Program Duration**")
-                st.caption("Number of days for the treatment program")
-            with col_dur2:
-                nueva_duracion = st.number_input(
-                    "Duration (days)",
-                    min_value=1,
-                    max_value=90,
-                    value=prog_data["duracion_dias"],
-                    step=1,
-                    key=f"duracion_{programa_seleccionado}",
-                    label_visibility="collapsed",
+            for i, row in df_rec_prof_editado.iterrows():
+                st.session_state.admin_recursos_prof[i]["num_personas"] = safe_int(row["People"], default=1, min_val=1)
+                st.session_state.admin_recursos_prof[i]["cap_semanal_por_persona"] = safe_float(row["Capacity/Person (h/week)"], default=40.0, min_val=0.0)
+                st.session_state.admin_recursos_prof[i]["cap_semanal_total"] = (
+                    st.session_state.admin_recursos_prof[i]["num_personas"] *
+                    st.session_state.admin_recursos_prof[i]["cap_semanal_por_persona"]
                 )
-                st.session_state.admin_programas[programa_seleccionado]["duracion_dias"] = nueva_duracion
 
             st.markdown("<br>", unsafe_allow_html=True)
 
-            # Tabla de actividades
-            st.markdown(f"**Activities for {programa_seleccionado}**")
-            st.caption("Edit quantity, duration and resources for each activity.")
+            st.markdown("#### Physical Resources")
+            st.caption("Edit number of units and capacity per unit. Total capacity is calculated automatically.")
 
-            # Obtener listas de recursos válidos
+            df_rec_fis = pd.DataFrame([
+                {
+                    "Department": rec["departamento"],
+                    "Resource": rec["nombre"],
+                    "Units": rec["num_unidades"],
+                    "Capacity/Unit (h/week)": rec["cap_semanal_por_unidad"],
+                    "Total Capacity (h/week)": rec["num_unidades"] * rec["cap_semanal_por_unidad"],
+                }
+                for rec in st.session_state.admin_recursos_fis
+            ])
+
+            df_rec_fis_editado = st.data_editor(
+                df_rec_fis,
+                column_config={
+                    "Department": st.column_config.TextColumn("Department", disabled=True, width="medium"),
+                    "Resource": st.column_config.TextColumn("Resource", disabled=True, width="large"),
+                    "Units": st.column_config.NumberColumn("# Units", min_value=1, max_value=100, step=1, format="%d"),
+                    "Capacity/Unit (h/week)": st.column_config.NumberColumn("Cap/Unit (h/week)", min_value=0.0, max_value=500.0, step=0.5, format="%.2f"),
+                    "Total Capacity (h/week)": st.column_config.NumberColumn("Total Cap (h/week)", disabled=True, format="%.1f"),
+                },
+                hide_index=True, use_container_width=True, num_rows="fixed",
+                key="editor_rec_fis_admin",
+            )
+
+            for i, row in df_rec_fis_editado.iterrows():
+                st.session_state.admin_recursos_fis[i]["num_unidades"] = safe_int(row["Units"], default=1, min_val=1)
+                st.session_state.admin_recursos_fis[i]["cap_semanal_por_unidad"] = safe_float(row["Capacity/Unit (h/week)"], default=40.0, min_val=0.0)
+                st.session_state.admin_recursos_fis[i]["cap_semanal_total"] = (
+                    st.session_state.admin_recursos_fis[i]["num_unidades"] *
+                    st.session_state.admin_recursos_fis[i]["cap_semanal_por_unidad"]
+                )
+
+        # ─────────────────────────────────────────────────
+        # SUB-TAB 2: ACTIVIDADES (CATÁLOGO)
+        # ─────────────────────────────────────────────────
+        with subtab_actividades:
+            st.markdown("#### Activity Catalog")
+            st.caption("Master catalog of all activities. Changes here affect all programs that use these activities.")
+
+            cat = st.session_state.admin_catalogo
+            cat_lookup = {a["nombre"]: a for a in cat}
+
+            # Count how many programs use each activity
+            _act_usage = {}
+            for _pn, _pd in st.session_state.admin_programas.items():
+                for _a in _pd.get("actividades", []):
+                    _act_usage[_a["nombre"]] = _act_usage.get(_a["nombre"], 0) + 1
+
+            # Overview table
+            df_catalogo = pd.DataFrame([
+                {
+                    "Activity": a["nombre"],
+                    "Type": a["tipo"],
+                    "Duration (min)": a["duracion_min"],
+                    "Prof. Resources": ", ".join(a["recursos_prof"]) if a["recursos_prof"] else "-",
+                    "Phys. Resource": a["recurso_fis"] if a["recurso_fis"] else "-",
+                    "Used in # Programs": _act_usage.get(a["nombre"], 0),
+                }
+                for a in sorted(cat, key=lambda x: x["nombre"])
+            ])
+
+            st.dataframe(
+                df_catalogo,
+                column_config={
+                    "Activity": st.column_config.TextColumn("Activity", width="large"),
+                    "Type": st.column_config.TextColumn("Type", width="small"),
+                    "Duration (min)": st.column_config.NumberColumn("Duration", format="%d"),
+                    "Prof. Resources": st.column_config.TextColumn("Prof. Resources", width="medium"),
+                    "Phys. Resource": st.column_config.TextColumn("Phys. Resource", width="medium"),
+                    "Used in # Programs": st.column_config.NumberColumn("# Programs", format="%d"),
+                },
+                hide_index=True, use_container_width=True, height=400,
+            )
+
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            # Editor de actividad existente
+            st.markdown("#### Edit Existing Activity")
             recursos_prof_validos = [r["nombre"] for r in st.session_state.admin_recursos_prof]
             recursos_fis_validos = [r["nombre"] for r in st.session_state.admin_recursos_fis]
 
-            # Crear DataFrame de actividades (recursos prof como read-only para mostrar)
-            df_actividades = pd.DataFrame([
-                {
-                    "Activity": act["nombre"],
-                    "Type": act["tipo"],
-                    "Quantity": act["cantidad"],
-                    "Duration (min)": act["duracion_min"],
-                    "Physical Resource": act["recurso_fis"] if act["recurso_fis"] else "",
-                }
-                for act in prog_data["actividades"]
-            ])
+            cat_nombres = sorted([a["nombre"] for a in cat])
+            act_edit_sel = st.selectbox("Select Activity to Edit:", options=cat_nombres, key="cat_edit_selector")
 
-            df_actividades_editado = st.data_editor(
-                df_actividades,
-                column_config={
-                    "Activity": st.column_config.TextColumn(
-                        "Activity",
-                        disabled=True,
-                        width="large",
-                    ),
-                    "Type": st.column_config.TextColumn(
+            if act_edit_sel and act_edit_sel in cat_lookup:
+                act_ref = cat_lookup[act_edit_sel]
+                act_idx = next(i for i, a in enumerate(cat) if a["nombre"] == act_edit_sel)
+
+                col_t, col_d = st.columns(2)
+                with col_t:
+                    new_tipo = st.selectbox(
                         "Type",
-                        disabled=True,
-                        width="small",
-                    ),
-                    "Quantity": st.column_config.NumberColumn(
-                        "Qty/Program",
-                        min_value=0,
-                        max_value=100,
-                        step=1,
-                        format="%d",
-                        help="Number of times this activity occurs during the entire program stay",
-                    ),
-                    "Duration (min)": st.column_config.NumberColumn(
-                        "Duration (min)",
-                        min_value=1,
-                        max_value=1440,
-                        step=5,
-                        format="%d",
-                        help="Duration of each session in minutes",
-                    ),
-                    "Physical Resource": st.column_config.SelectboxColumn(
-                        "Physical Resource",
-                        options=[""] + recursos_fis_validos,
-                        help="Select a physical resource or leave empty for None",
-                        width="medium",
-                    ),
-                },
-                hide_index=True,
-                use_container_width=True,
-                num_rows="fixed",
-                key=f"editor_actividades_{programa_seleccionado}",
-            )
+                        options=["Consulta", "Terapia", "Estudio", "Otro", "Other"],
+                        index=["Consulta", "Terapia", "Estudio", "Otro", "Other"].index(act_ref["tipo"])
+                            if act_ref["tipo"] in ["Consulta", "Terapia", "Estudio", "Otro", "Other"] else 0,
+                        key=f"cat_tipo_{act_edit_sel}",
+                    )
+                with col_d:
+                    new_dur = st.number_input(
+                        "Duration (min)", min_value=1, max_value=1440,
+                        value=act_ref["duracion_min"], step=5,
+                        key=f"cat_dur_{act_edit_sel}",
+                    )
 
-            # Actualizar session_state con cambios de la tabla
-            for i, row in df_actividades_editado.iterrows():
-                st.session_state.admin_programas[programa_seleccionado]["actividades"][i]["cantidad"] = safe_int(row["Quantity"], default=1, min_val=0)
-                st.session_state.admin_programas[programa_seleccionado]["actividades"][i]["duracion_min"] = safe_int(row["Duration (min)"], default=30, min_val=1)
-                phys_resource = safe_string(row["Physical Resource"], default="")
-                st.session_state.admin_programas[programa_seleccionado]["actividades"][i]["recurso_fis"] = phys_resource if phys_resource else None
+                new_prof = st.multiselect(
+                    "Professional Resources",
+                    options=recursos_prof_validos,
+                    default=[r for r in act_ref["recursos_prof"] if r in recursos_prof_validos],
+                    key=f"cat_prof_{act_edit_sel}",
+                )
+
+                new_fis = st.selectbox(
+                    "Physical Resource",
+                    options=["(None)"] + recursos_fis_validos,
+                    index=(recursos_fis_validos.index(act_ref["recurso_fis"]) + 1)
+                        if act_ref["recurso_fis"] and act_ref["recurso_fis"] in recursos_fis_validos else 0,
+                    key=f"cat_fis_{act_edit_sel}",
+                )
+
+                # Apply changes to catalog
+                st.session_state.admin_catalogo[act_idx]["tipo"] = new_tipo
+                st.session_state.admin_catalogo[act_idx]["duracion_min"] = safe_int(new_dur, default=30, min_val=1)
+                st.session_state.admin_catalogo[act_idx]["recursos_prof"] = new_prof
+                st.session_state.admin_catalogo[act_idx]["recurso_fis"] = new_fis if new_fis != "(None)" else None
 
             st.markdown("<br>", unsafe_allow_html=True)
 
-            # Editor de recursos profesionales por actividad
-            st.markdown("**Edit Professional Resources per Activity**")
-            st.caption("Select an activity to assign professional resources using the multi-select below.")
+            # Crear nueva actividad
+            st.markdown("#### Create New Activity")
+            with st.form("form_new_activity", clear_on_submit=True):
+                new_act_name = st.text_input("Activity Name")
+                col_nt, col_nd = st.columns(2)
+                with col_nt:
+                    new_act_tipo = st.selectbox("Type", options=["Consulta", "Terapia", "Estudio", "Otro", "Other"], key="new_act_tipo")
+                with col_nd:
+                    new_act_dur = st.number_input("Duration (min)", min_value=1, max_value=1440, value=30, step=5, key="new_act_dur")
+                new_act_prof = st.multiselect("Professional Resources", options=recursos_prof_validos, key="new_act_prof")
+                new_act_fis = st.selectbox("Physical Resource", options=["(None)"] + recursos_fis_validos, key="new_act_fis")
+                submitted_act = st.form_submit_button("Add Activity")
 
-            # Selector de actividad
-            actividad_nombres = [act["nombre"] for act in prog_data["actividades"]]
-            actividad_seleccionada = st.selectbox(
-                "Select Activity:",
-                options=range(len(actividad_nombres)),
-                format_func=lambda x: actividad_nombres[x],
-                key=f"admin_actividad_selector_{programa_seleccionado}",
+                if submitted_act:
+                    act_name_clean = safe_string(new_act_name, default="").strip()
+                    existing_names = {a["nombre"] for a in st.session_state.admin_catalogo}
+                    if not act_name_clean:
+                        st.error("Activity name cannot be empty.")
+                    elif act_name_clean in existing_names:
+                        st.error(f"Activity '{act_name_clean}' already exists in the catalog.")
+                    else:
+                        st.session_state.admin_catalogo.append({
+                            "nombre": act_name_clean,
+                            "tipo": new_act_tipo,
+                            "duracion_min": safe_int(new_act_dur, default=30, min_val=1),
+                            "recursos_prof": new_act_prof,
+                            "recurso_fis": new_act_fis if new_act_fis != "(None)" else None,
+                        })
+                        st.success(f"Activity '{act_name_clean}' added to catalog.")
+                        st.rerun()
+
+        # ─────────────────────────────────────────────────
+        # SUB-TAB 3: PROGRAMAS
+        # ─────────────────────────────────────────────────
+        with subtab_programas:
+            st.markdown("#### Programs")
+
+            # ── Crear nuevo programa ──
+            st.markdown("##### Create New Program / Extension")
+            with st.form("form_new_program", clear_on_submit=True):
+                new_prog_name = st.text_input("Program Name")
+                col_pt, col_pb = st.columns(2)
+                with col_pt:
+                    new_prog_tipo = st.selectbox("Type", options=["programa", "extension"], key="new_prog_tipo")
+                with col_pb:
+                    _existing_bases = [k for k, v in st.session_state.admin_programas.items() if v.get("tipo") == "programa"]
+                    new_prog_base = st.selectbox(
+                        "Base Program (for extensions)",
+                        options=["(N/A)"] + _existing_bases,
+                        key="new_prog_base",
+                    )
+                col_pd, col_pp = st.columns(2)
+                with col_pd:
+                    new_prog_dur = st.number_input("Duration (days)", min_value=1, max_value=90, value=7, step=1, key="new_prog_dur")
+                with col_pp:
+                    new_prog_pri = st.number_input("Priority", min_value=1, max_value=100, value=5, step=1, key="new_prog_pri")
+                submitted_prog = st.form_submit_button("Create Program")
+
+                if submitted_prog:
+                    prog_name_clean = safe_string(new_prog_name, default="").strip()
+                    if not prog_name_clean:
+                        st.error("Program name cannot be empty.")
+                    elif prog_name_clean in st.session_state.admin_programas:
+                        st.error(f"Program '{prog_name_clean}' already exists.")
+                    elif new_prog_tipo == "extension" and new_prog_base == "(N/A)":
+                        st.error("Extensions must specify a base program.")
+                    else:
+                        new_prog_data = {
+                            "duracion_dias": safe_int(new_prog_dur, default=7, min_val=1),
+                            "prioridad": safe_int(new_prog_pri, default=5, min_val=1),
+                            "tipo": new_prog_tipo,
+                            "actividades": [],
+                        }
+                        if new_prog_tipo == "extension":
+                            new_prog_data["programa_base"] = new_prog_base
+                        st.session_state.admin_programas[prog_name_clean] = new_prog_data
+                        st.success(f"Program '{prog_name_clean}' created. Add activities below.")
+                        st.rerun()
+
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            # ── Selector de programa ──
+            programa_nombres = list(st.session_state.admin_programas.keys())
+            _admin_base = [n for n in programa_nombres if st.session_state.admin_programas[n].get("tipo") == "programa"]
+            _admin_ext = [n for n in programa_nombres if st.session_state.admin_programas[n].get("tipo") != "programa"]
+            _admin_opciones = _admin_base + _admin_ext
+
+            def _fmt_admin_programa(name):
+                prog = st.session_state.admin_programas[name]
+                if prog.get("tipo") == "extension":
+                    return f"  ↳ {name}  ({prog.get('programa_base', '')})"
+                return name
+
+            programa_seleccionado = st.selectbox(
+                "Select Program:",
+                options=_admin_opciones,
+                format_func=_fmt_admin_programa,
+                key="admin_programa_selector",
             )
 
-            if actividad_seleccionada is not None:
-                act_actual = st.session_state.admin_programas[programa_seleccionado]["actividades"][actividad_seleccionada]
+            if programa_seleccionado:
+                prog_data = st.session_state.admin_programas[programa_seleccionado]
 
-                # Multiselect para recursos profesionales
-                recursos_actuales = act_actual.get("recursos_prof", [])
-                # Asegurar que los recursos actuales existan en la lista válida
-                recursos_actuales_validos = [r for r in recursos_actuales if r in recursos_prof_validos]
+                # ── Metadatos editables ──
+                col_dur, col_pri = st.columns(2)
+                with col_dur:
+                    nueva_duracion = st.number_input(
+                        "Duration (days)", min_value=1, max_value=90,
+                        value=prog_data["duracion_dias"], step=1,
+                        key=f"duracion_{programa_seleccionado}",
+                    )
+                    st.session_state.admin_programas[programa_seleccionado]["duracion_dias"] = nueva_duracion
+                with col_pri:
+                    nueva_prioridad = st.number_input(
+                        "Priority", min_value=1, max_value=100,
+                        value=prog_data.get("prioridad", 5), step=1,
+                        key=f"prioridad_{programa_seleccionado}",
+                    )
+                    st.session_state.admin_programas[programa_seleccionado]["prioridad"] = nueva_prioridad
 
-                nuevos_recursos = st.multiselect(
-                    "Professional Resources:",
-                    options=recursos_prof_validos,
-                    default=recursos_actuales_validos,
-                    key=f"multiselect_prof_{programa_seleccionado}_{actividad_seleccionada}",
-                    help="Select one or more professional resources required for this activity",
-                )
+                st.markdown("<br>", unsafe_allow_html=True)
 
-                # Actualizar los recursos profesionales en session_state
-                st.session_state.admin_programas[programa_seleccionado]["actividades"][actividad_seleccionada]["recursos_prof"] = nuevos_recursos
+                # ── Tabla de actividades del programa ──
+                st.markdown(f"**Activities for {programa_seleccionado}**")
+                st.caption("Only Quantity is editable. Type, duration, and resources are inherited from the catalog.")
 
-                # Mostrar resumen de la actividad seleccionada
-                st.info(f"**{act_actual['nombre']}**: {len(nuevos_recursos)} professional resource(s) assigned")
+                cat_lookup_now = {a["nombre"]: a for a in st.session_state.admin_catalogo}
+
+                if prog_data["actividades"]:
+                    df_prog_acts = pd.DataFrame([
+                        {
+                            "Activity": act["nombre"],
+                            "Type": cat_lookup_now.get(act["nombre"], act).get("tipo", act.get("tipo", "")),
+                            "Quantity": act["cantidad"],
+                            "Duration (min)": cat_lookup_now.get(act["nombre"], act).get("duracion_min", act.get("duracion_min", 0)),
+                            "Prof. Resources": ", ".join(cat_lookup_now.get(act["nombre"], act).get("recursos_prof", [])),
+                            "Phys. Resource": cat_lookup_now.get(act["nombre"], act).get("recurso_fis", "") or "-",
+                        }
+                        for act in prog_data["actividades"]
+                    ])
+
+                    df_prog_acts_editado = st.data_editor(
+                        df_prog_acts,
+                        column_config={
+                            "Activity": st.column_config.TextColumn("Activity", disabled=True, width="large"),
+                            "Type": st.column_config.TextColumn("Type", disabled=True, width="small"),
+                            "Quantity": st.column_config.NumberColumn("Qty", min_value=0, max_value=100, step=1, format="%d"),
+                            "Duration (min)": st.column_config.NumberColumn("Duration", disabled=True, format="%d"),
+                            "Prof. Resources": st.column_config.TextColumn("Prof. Resources", disabled=True, width="medium"),
+                            "Phys. Resource": st.column_config.TextColumn("Phys. Resource", disabled=True, width="medium"),
+                        },
+                        hide_index=True, use_container_width=True, num_rows="fixed",
+                        key=f"editor_actividades_{programa_seleccionado}",
+                    )
+
+                    for i, row in df_prog_acts_editado.iterrows():
+                        st.session_state.admin_programas[programa_seleccionado]["actividades"][i]["cantidad"] = safe_int(row["Quantity"], default=1, min_val=0)
+                else:
+                    st.info("This program has no activities yet. Add one below.")
+
+                st.markdown("<br>", unsafe_allow_html=True)
+
+                # ── Agregar actividad del catálogo ──
+                st.markdown("**Add Activity from Catalog**")
+                existing_act_names = {a["nombre"] for a in prog_data["actividades"]}
+                available_acts = sorted([a["nombre"] for a in st.session_state.admin_catalogo if a["nombre"] not in existing_act_names])
+
+                if available_acts:
+                    col_add_act, col_add_qty, col_add_btn = st.columns([3, 1, 1])
+                    with col_add_act:
+                        add_act_name = st.selectbox("Activity", options=available_acts, key=f"add_act_{programa_seleccionado}")
+                    with col_add_qty:
+                        add_act_qty = st.number_input("Quantity", min_value=1, max_value=100, value=1, step=1, key=f"add_qty_{programa_seleccionado}")
+                    with col_add_btn:
+                        st.markdown("<br>", unsafe_allow_html=True)
+                        if st.button("Add", key=f"btn_add_act_{programa_seleccionado}", type="primary"):
+                            canon = cat_lookup_now.get(add_act_name, {})
+                            st.session_state.admin_programas[programa_seleccionado]["actividades"].append({
+                                "nombre": add_act_name,
+                                "tipo": canon.get("tipo", "Otro"),
+                                "cantidad": safe_int(add_act_qty, default=1, min_val=1),
+                                "duracion_min": canon.get("duracion_min", 30),
+                                "recursos_prof": list(canon.get("recursos_prof", [])),
+                                "recurso_fis": canon.get("recurso_fis"),
+                            })
+                            st.rerun()
+                else:
+                    st.caption("All catalog activities are already in this program.")
+
+                st.markdown("<br>", unsafe_allow_html=True)
+
+                # ── Eliminar actividad ──
+                if prog_data["actividades"]:
+                    st.markdown("**Remove Activity**")
+                    act_remove_options = [a["nombre"] for a in prog_data["actividades"]]
+                    col_rem, col_rem_btn = st.columns([3, 1])
+                    with col_rem:
+                        rem_act = st.selectbox("Activity to remove", options=act_remove_options, key=f"rem_act_{programa_seleccionado}")
+                    with col_rem_btn:
+                        st.markdown("<br>", unsafe_allow_html=True)
+                        can_remove = len(prog_data["actividades"]) > 1
+                        if st.button("Remove", key=f"btn_rem_act_{programa_seleccionado}", disabled=not can_remove):
+                            st.session_state.admin_programas[programa_seleccionado]["actividades"] = [
+                                a for a in prog_data["actividades"] if a["nombre"] != rem_act
+                            ]
+                            st.rerun()
+                    if not can_remove:
+                        st.caption("Cannot remove the last activity.")
+
+                st.markdown("<br>", unsafe_allow_html=True)
+
+                # ── Eliminar programa ──
+                st.markdown("**Delete Program**")
+                # Check for cascade
+                if prog_data.get("tipo") == "programa":
+                    linked_exts = [k for k, v in st.session_state.admin_programas.items()
+                                   if v.get("programa_base") == programa_seleccionado]
+                    if linked_exts:
+                        st.warning(
+                            f"This is a base program. Deleting it will also delete {len(linked_exts)} "
+                            f"extension(s): {', '.join(linked_exts)}"
+                        )
+
+                # 2-step confirmation
+                confirm_key = f"confirm_delete_{programa_seleccionado}"
+                if confirm_key not in st.session_state:
+                    st.session_state[confirm_key] = False
+
+                if not st.session_state[confirm_key]:
+                    if st.button(f"Delete '{programa_seleccionado}'", key=f"btn_del_{programa_seleccionado}"):
+                        st.session_state[confirm_key] = True
+                        st.rerun()
+                else:
+                    st.error(f"Are you sure you want to delete '{programa_seleccionado}'? This cannot be undone.")
+                    col_cd, col_cc = st.columns(2)
+                    with col_cd:
+                        if st.button("Yes, Delete", key=f"btn_confirm_del_{programa_seleccionado}", type="primary"):
+                            # Cascade delete extensions if base program
+                            if prog_data.get("tipo") == "programa":
+                                exts_to_del = [k for k, v in st.session_state.admin_programas.items()
+                                               if v.get("programa_base") == programa_seleccionado]
+                                for ext in exts_to_del:
+                                    del st.session_state.admin_programas[ext]
+                            del st.session_state.admin_programas[programa_seleccionado]
+                            st.session_state[confirm_key] = False
+                            st.rerun()
+                    with col_cc:
+                        if st.button("Cancel", key=f"btn_cancel_del_{programa_seleccionado}"):
+                            st.session_state[confirm_key] = False
+                            st.rerun()
 
         st.markdown("<br>", unsafe_allow_html=True)
 
@@ -1797,13 +1978,24 @@ if st.session_state.admin_mode:
         if not st.session_state.confirmar_guardado:
             with col_save2:
                 guardar_btn = st.button(
-                    "💾 Save All Changes",
+                    "Save All Changes",
                     type="primary",
                     use_container_width=True,
                 )
             if guardar_btn:
-                st.session_state.confirmar_guardado = True
-                st.rerun()
+                # Validate before showing confirmation
+                is_valid, validation_errors = validate_before_save(
+                    st.session_state.admin_programas,
+                    st.session_state.admin_catalogo,
+                    st.session_state.admin_recursos_prof,
+                    st.session_state.admin_recursos_fis,
+                )
+                if not is_valid:
+                    for err in validation_errors:
+                        st.error(err)
+                else:
+                    st.session_state.confirmar_guardado = True
+                    st.rerun()
         else:
             st.markdown("""
             <div style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border: 2px solid #F59E0B; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem;">
@@ -1812,8 +2004,8 @@ if st.session_state.admin_mode:
                     <div>
                         <strong style="color: #92400E; font-size: 1.1rem;">Confirm Save</strong><br>
                         <span style="color: #78350F; font-size: 0.95rem;">
-                            You are about to permanently save changes to treatment programs,
-                            professional resources, and physical resources.<br>
+                            You are about to permanently save changes to the activity catalog,
+                            treatment programs, professional resources, and physical resources.<br>
                             <strong>This action cannot be undone.</strong> Are you sure you want to continue?
                         </span>
                     </div>
@@ -1825,14 +2017,14 @@ if st.session_state.admin_mode:
 
             with col_confirm:
                 confirmar_btn = st.button(
-                    "✅ Yes, Save Changes",
+                    "Yes, Save Changes",
                     type="primary",
                     use_container_width=True,
                 )
 
             with col_cancel:
                 cancelar_btn = st.button(
-                    "❌ Cancel",
+                    "Cancel",
                     use_container_width=True,
                 )
 
@@ -1843,16 +2035,25 @@ if st.session_state.admin_mode:
                             st.session_state.admin_programas,
                             st.session_state.admin_recursos_prof,
                             st.session_state.admin_recursos_fis,
+                            st.session_state.admin_catalogo,
                         )
                         st.session_state.confirmar_guardado = False
+                        # Hot-reload BD_sanoviv
+                        importlib.reload(datos)
                         # Limpiar datos de admin para recargar desde archivo
-                        del st.session_state.admin_programas
-                        del st.session_state.admin_recursos_prof
-                        del st.session_state.admin_recursos_fis
-                        st.success("✅ Changes saved successfully. Restart the application to see the updated data.")
+                        for key in ["admin_programas", "admin_recursos_prof", "admin_recursos_fis", "admin_catalogo"]:
+                            if key in st.session_state:
+                                del st.session_state[key]
+                        # Reset pacientes_actuales if program count changed
+                        new_n = len(datos.programas)
+                        if "pacientes_actuales" in st.session_state:
+                            old_n = len(st.session_state.pacientes_actuales)
+                            if old_n != new_n:
+                                st.session_state.pacientes_actuales = [0] * new_n
+                        st.success("Changes saved successfully. The data has been reloaded.")
                         st.balloons()
                     except Exception as e:
-                        st.error(f"❌ Error saving changes: {str(e)}")
+                        st.error(f"Error saving changes: {str(e)}")
                         st.session_state.confirmar_guardado = False
 
             if cancelar_btn:
@@ -1860,9 +2061,8 @@ if st.session_state.admin_mode:
                 st.rerun()
 
         st.markdown("<br>", unsafe_allow_html=True)
-        st.warning(
-            "**Important:** After saving changes, you need to restart the application "
-            "(refresh the page) for the new data to take effect."
+        st.info(
+            "**Note:** Changes are applied immediately after saving (no restart needed)."
         )
 
 # === FOOTER ===
