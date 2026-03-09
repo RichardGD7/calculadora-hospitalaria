@@ -331,6 +331,8 @@ consumo_semanal_h = (cantidad * duracion_min / 60) / (duracion_dias / 7)
             contenido += f'                "recursos_prof": {repr(canon["recursos_prof"])},\n'
             rec_fis = repr(canon["recurso_fis"]) if canon["recurso_fis"] else "None"
             contenido += f'                "recurso_fis":   {rec_fis},\n'
+            if "cantidad_por_semana" in act:
+                contenido += f'                "cantidad_por_semana": {act["cantidad_por_semana"]},\n'
             contenido += '            },\n'
 
         contenido += '        ],\n'
@@ -371,6 +373,31 @@ duraciones_dias   = {k: v["duracion_dias"] for k, v in programas.items()}
 prioridades       = {k: v["prioridad"]     for k, v in programas.items()}
 
 catalogo_por_nombre = {a["nombre"]: a for a in catalogo_actividades}
+
+
+# ── Validación de cantidad_por_semana ────────────────────────────────────────
+
+def validar_cantidades_por_semana():
+    """Valida que cantidad_por_semana sea consistente con cantidad y duracion_dias."""
+    errores = []
+    for nombre, prog in programas.items():
+        n_semanas_esperadas = max(prog["duracion_dias"] // 7, 1)
+        for act in prog["actividades"]:
+            cps = act.get("cantidad_por_semana", [act["cantidad"]])
+            if sum(cps) != act["cantidad"]:
+                errores.append(
+                    f"{nombre} / {act['nombre']}: suma {sum(cps)} ≠ cantidad {act['cantidad']}"
+                )
+            if len(cps) != n_semanas_esperadas:
+                errores.append(
+                    f"{nombre} / {act['nombre']}: len {len(cps)} ≠ semanas esperadas {n_semanas_esperadas}"
+                )
+    if errores:
+        raise ValueError("Errores en cantidad_por_semana:\\n" + "\\n".join(errores))
+    return True
+
+
+validar_cantidades_por_semana()
 '''
 
     # Guardar el archivo
