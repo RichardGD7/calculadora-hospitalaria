@@ -1906,18 +1906,17 @@ if st.session_state.admin_mode:
             # ─── SUB-TAB: CREATE NEW PROGRAM ─────────────────
             with subtab_new_prog:
                 st.markdown("##### New Program / Extension")
+                new_prog_tipo = st.selectbox("Type", options=["programa", "extension"], key="new_prog_tipo")
+                _is_extension = new_prog_tipo == "extension"
                 with st.form("form_new_program", clear_on_submit=True):
                     new_prog_name = st.text_input("Program Name")
-                    col_pt, col_pb = st.columns(2)
-                    with col_pt:
-                        new_prog_tipo = st.selectbox("Type", options=["programa", "extension"], key="new_prog_tipo")
-                    with col_pb:
-                        _existing_bases = [k for k, v in st.session_state.admin_programas.items() if v.get("tipo") == "programa"]
-                        new_prog_base = st.selectbox(
-                            "Base Program (for extensions)",
-                            options=["(N/A)"] + _existing_bases,
-                            key="new_prog_base",
-                        )
+                    _existing_bases = [k for k, v in st.session_state.admin_programas.items() if v.get("tipo") == "programa"]
+                    new_prog_base = st.selectbox(
+                        "Base Program (for extensions)",
+                        options=["(N/A)"] + _existing_bases,
+                        key="new_prog_base",
+                        disabled=not _is_extension,
+                    )
                     col_pd, col_pp = st.columns(2)
                     with col_pd:
                         new_prog_dur = st.number_input("Duration (days)", min_value=1, max_value=90, value=7, step=1, key="new_prog_dur")
