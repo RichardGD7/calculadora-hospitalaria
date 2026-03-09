@@ -439,7 +439,7 @@ st.markdown(f"""
 
     /* Header principal */
     .main-header {{
-        background: linear-gradient(to right, {COLORS["primary"]} 0%, {COLORS["secondary"]} 40%, #FFFFFF 100%);
+        background: linear-gradient(to right, {COLORS["primary"]} 0%, {COLORS["secondary"]} 30%, #FFFFFF 70%);
         padding: 0.5rem 1.5rem;
         border-radius: 10px;
         margin-bottom: 0.5rem;
@@ -515,6 +515,15 @@ st.markdown(f"""
 
     .metric-value.accent {{
         color: {COLORS["accent"]};
+    }}
+
+    /* Fix Streamlit containers to allow sticky positioning */
+    .main .block-container, [data-testid="stVerticalBlock"],
+    .stMainBlockContainer, [data-testid="stMain"],
+    .stApp [data-testid="stAppViewContainer"],
+    .stApp [data-testid="stAppViewBlockContainer"],
+    section[data-testid="stMain"] > div {{
+        overflow: visible !important;
     }}
 
     /* Pestañas personalizadas — sticky en la parte superior */
