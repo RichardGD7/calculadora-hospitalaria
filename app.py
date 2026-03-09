@@ -680,17 +680,27 @@ for editor_key, idx_map in _pre_sync_editors:
 
 # === PESTAÑAS ===
 if st.session_state.admin_mode:
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 Executive Summary", "👥 Patients", "📈 Resources", "🔍 Verify Admission", "⚙️ Administration"])
+    tab2, tab3, tab4, tab1, tab5 = st.tabs(["👥 Patients", "📈 Resources", "🔍 Verify Admission", "📊 Optimization Results", "⚙️ Administration"])
 else:
-    tab1, tab2, tab3, tab4 = st.tabs(["📊 Executive Summary", "👥 Patients", "📈 Resources", "🔍 Verify Admission"])
+    tab2, tab3, tab4, tab1 = st.tabs(["👥 Patients", "📈 Resources", "🔍 Verify Admission", "📊 Optimization Results"])
 
 # =====================================================
-# TAB 1: RESUMEN EJECUTIVO
+# TAB 1: OPTIMIZATION RESULTS
 # =====================================================
 with tab1:
     # Métricas principales en la parte superior
     total_actuales = sum(st.session_state.pacientes_actuales)
-    st.caption("Note: Optimization results are based on weekly averages per program. For precise per-week resource availability, use the **Verify Admission** tab.")
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border: 2px solid #F59E0B; border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 1.3rem;">⚠️</span>
+            <span style="color: #78350F;">
+                <strong>Important:</strong> These results are based on <strong>weekly averages</strong> per program, not actual per-week consumption.
+                For precise resource availability, use the <strong>Verify Admission</strong> tab.
+            </span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     if st.session_state.resultados is not None and st.session_state.resultados["estado"] == "Optimal":
         resultados = st.session_state.resultados
@@ -1161,7 +1171,7 @@ with tab2:
                         <span style="color: #065F46;">
                             <strong>Optimization Completed Successfully!</strong> The model found an optimal solution.
                             You can admit up to <strong>{total_adicionales}</strong> additional patients.
-                            Go to <strong>Executive Summary</strong> to see the full results.
+                            Go to <strong>Optimization Results</strong> to see the full results.
                         </span>
                     </div>
                 </div>
@@ -1193,7 +1203,13 @@ with tab2:
             "Total": [a + b for a, b in zip(st.session_state.pacientes_actuales, resultados["pacientes_adicionales"])],
         })
 
-        st.caption("Note: Optimization results are based on weekly averages. Use **Verify Admission** for precise per-week availability.")
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border: 1px solid #F59E0B; border-radius: 8px; padding: 0.75rem; margin-bottom: 1rem;">
+            <span style="color: #78350F; font-size: 0.9rem;">
+                ⚠️ Results based on weekly averages. Use <strong>Verify Admission</strong> for precise availability.
+            </span>
+        </div>
+        """, unsafe_allow_html=True)
 
         st.dataframe(
             df_resultado,
