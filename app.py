@@ -561,6 +561,9 @@ st.markdown("""
 
 # === CARGAR DATOS ===
 datos_base = obtener_datos_base()
+if "catalogo_actividades" not in datos_base:
+    st.error(f"datos_base keys: {list(datos_base.keys())}")
+    st.stop()
 
 # === ÍNDICES POR TIPO (programa base vs extensión) ===
 _programas_dict = datos_base["programas"]
