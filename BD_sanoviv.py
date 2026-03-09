@@ -7586,7 +7586,7 @@ def validar_cantidades_por_semana():
     """Valida que cantidad_por_semana sea consistente con cantidad y duracion_dias."""
     errores = []
     for nombre, prog in programas.items():
-        n_semanas_esperadas = max(prog["duracion_dias"] // 7, 1)
+        n_semanas_esperadas = -(-prog["duracion_dias"] // 7)
         for act in prog["actividades"]:
             cps = act.get("cantidad_por_semana", [act["cantidad"]])
             if sum(cps) != act["cantidad"]:

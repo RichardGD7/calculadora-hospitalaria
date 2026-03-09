@@ -381,7 +381,7 @@ def validar_cantidades_por_semana():
     """Valida que cantidad_por_semana sea consistente con cantidad y duracion_dias."""
     errores = []
     for nombre, prog in programas.items():
-        n_semanas_esperadas = max(prog["duracion_dias"] // 7, 1)
+        n_semanas_esperadas = -(-prog["duracion_dias"] // 7)
         for act in prog["actividades"]:
             cps = act.get("cantidad_por_semana", [act["cantidad"]])
             if sum(cps) != act["cantidad"]:
@@ -612,7 +612,7 @@ if "pacientes_por_semana_tab" not in st.session_state:
     # {prog_idx: [w1_count, w2_count, w3_count]} — length matches program weeks
     st.session_state.pacientes_por_semana_tab = {}
     for i, nombre in enumerate(datos_base["nombre_programas"]):
-        n_sem = max(datos_base["duraciones_dias"][nombre] // 7, 1)
+        n_sem = -(-datos_base["duraciones_dias"][nombre] // 7)
         st.session_state.pacientes_por_semana_tab[i] = [0] * n_sem
 
 if "admin_mode" not in st.session_state:
@@ -646,7 +646,7 @@ _pre_sync_editors = []
 # Group base programs by weeks (same grouping as tab2)
 _pre_base_by_weeks = {}
 for i in indices_base:
-    _n_s = max(datos_base["duraciones_dias"][_nombres[i]] // 7, 1)
+    _n_s = -(-datos_base["duraciones_dias"][_nombres[i]] // 7)
     _pre_base_by_weeks.setdefault(_n_s, []).append(i)
 for _n_s in sorted(_pre_base_by_weeks.keys()):
     _pre_sync_editors.append((f"editor_pacientes_base_{_n_s}w", _pre_base_by_weeks[_n_s]))
@@ -661,7 +661,7 @@ for editor_key, idx_map in _pre_sync_editors:
                     local_idx = safe_int(row_idx, default=0, min_val=0, max_val=len(idx_map)-1)
                     global_idx = idx_map[local_idx]
                     _nombre_prog = datos_base["nombre_programas"][global_idx]
-                    _n_sem = max(datos_base["duraciones_dias"][_nombre_prog] // 7, 1)
+                    _n_sem = -(-datos_base["duraciones_dias"][_nombre_prog] // 7)
                     _cur_weeks = list(st.session_state.pacientes_por_semana_tab.get(global_idx, [0] * _n_sem))
                     _changed = False
                     for _w in range(1, _n_sem + 1):
@@ -1000,7 +1000,7 @@ with tab2:
     _base_by_weeks = {}
     for i in indices_base:
         _nombre = _nombres[i]
-        _n_sem = max(datos_base["duraciones_dias"][_nombre] // 7, 1)
+        _n_sem = -(-datos_base["duraciones_dias"][_nombre] // 7)
         _base_by_weeks.setdefault(_n_sem, []).append(i)
 
     for _grp_n_sem in sorted(_base_by_weeks.keys()):
@@ -1129,7 +1129,7 @@ with tab2:
     if limpiar:
         st.session_state.pacientes_actuales = [0] * len(datos_base["nombre_programas"])
         for i, nombre in enumerate(datos_base["nombre_programas"]):
-            n_sem = max(datos_base["duraciones_dias"][nombre] // 7, 1)
+            n_sem = -(-datos_base["duraciones_dias"][nombre] // 7)
             st.session_state.pacientes_por_semana_tab[i] = [0] * n_sem
         st.session_state.resultados = None
         st.rerun()
@@ -1943,7 +1943,7 @@ if st.session_state.admin_mode:
                     st.success(f"Program '{_new_prog_name}' created. Add activities below.")
                     st.markdown(f"##### Activities for {_new_prog_name}")
 
-                    _np_n_semanas = max(_new_prog["duracion_dias"] // 7, 1)
+                    _np_n_semanas = -(-_new_prog["duracion_dias"] // 7)
                     _np_is_multi = _np_n_semanas > 1
 
                     if _np_is_multi:
@@ -2138,7 +2138,7 @@ if st.session_state.admin_mode:
 
                     # ── Tabla de actividades del programa ──
                     st.markdown(f"**Activities for {programa_seleccionado}**")
-                    _n_semanas_prog = max(prog_data["duracion_dias"] // 7, 1)
+                    _n_semanas_prog = -(-prog_data["duracion_dias"] // 7)
                     _is_multi_week = _n_semanas_prog > 1
 
                     if _is_multi_week:
@@ -2420,7 +2420,7 @@ if st.session_state.admin_mode:
                                 _new_datos_base = obtener_datos_base()
                                 st.session_state.pacientes_por_semana_tab = {}
                                 for _i, _nom in enumerate(_new_datos_base["nombre_programas"]):
-                                    _n_s = max(_new_datos_base["duraciones_dias"][_nom] // 7, 1)
+                                    _n_s = -(-_new_datos_base["duraciones_dias"][_nom] // 7)
                                     st.session_state.pacientes_por_semana_tab[_i] = [0] * _n_s
                         st.success("Changes saved successfully. The data has been reloaded.")
                         st.balloons()

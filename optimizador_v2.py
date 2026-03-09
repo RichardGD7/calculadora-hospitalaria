@@ -471,7 +471,7 @@ def construir_modelo_datos_semana(semana: int) -> dict:
     for j, prog_name in enumerate(nombres_programas):
         prog       = datos.programas[prog_name]
         dias       = prog["duracion_dias"]
-        n_semanas_prog = max(dias // 7, 1)
+        n_semanas_prog = -(-dias // 7)
 
         # Si este programa no tiene actividad en esta semana, consumo = 0
         if semana > n_semanas_prog:
