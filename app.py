@@ -1371,7 +1371,7 @@ with tab4:
     st.markdown("#### Admission Requests")
 
     # Crear columnas para el formulario
-    col_form1, col_form2, col_form3 = st.columns([2, 1, 1])
+    col_form1, col_form2 = st.columns([3, 1])
 
     with col_form1:
         # Selector de programa (agrupado: base programs primero, luego extensions con prefijo)
@@ -1402,20 +1402,6 @@ with tab4:
             key="cantidad_verificar",
         )
 
-    with col_form3:
-        # Selector de semana (dinámico según programa seleccionado)
-        _nombre_sel = datos_base["nombre_programas"][programa_seleccionado]
-        _n_semanas_sel = max(datos_base["duraciones_dias"][_nombre_sel] // 7, 1)
-        if _n_semanas_sel > 1:
-            semana_solicitud = st.selectbox(
-                "Week:",
-                options=list(range(1, _n_semanas_sel + 1)),
-                key="semana_verificar",
-            )
-        else:
-            st.text_input("Week:", value="1", disabled=True, key="semana_verificar_disabled")
-            semana_solicitud = 1
-
     # Inicializar lista de solicitudes en session state
     if "solicitudes_admision" not in st.session_state:
         st.session_state.solicitudes_admision = {}
@@ -1425,13 +1411,11 @@ with tab4:
 
     with col_btn1:
         if st.button("➕ Add", use_container_width=True):
-            # Validar cantidad antes de agregar
             cantidad_validada = safe_int(cantidad_pacientes, default=1, min_val=1, max_val=50)
             programa_validado = safe_int(programa_seleccionado, default=0, min_val=0, max_val=len(datos_base["nombre_programas"])-1)
-            semana_validada = safe_int(semana_solicitud, default=1, min_val=1, max_val=3)
             st.session_state.solicitudes_admision[programa_validado] = {
                 "cantidad": cantidad_validada,
-                "semana": semana_validada,
+                "semana": 1,
             }
             st.rerun()
 
@@ -1449,7 +1433,6 @@ with tab4:
         solicitudes_df = pd.DataFrame([
             {
                 "Program": datos_base["nombre_programas"][idx],
-                "Week": sol["semana"],
                 "Requested Patients": sol["cantidad"],
             }
             for idx, sol in st.session_state.solicitudes_admision.items()
@@ -1459,7 +1442,6 @@ with tab4:
             solicitudes_df,
             column_config={
                 "Program": st.column_config.TextColumn("Program", width="large"),
-                "Week": st.column_config.NumberColumn("Week", format="%d"),
                 "Requested Patients": st.column_config.NumberColumn("Patients", format="%d"),
             },
             hide_index=True,
