@@ -619,38 +619,39 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# === STICKY TABS via JS ===
-st.markdown("""
+# === STICKY TABS via JS (uses components.html to bypass script sanitization) ===
+import streamlit.components.v1 as _components
+_components.html("""
 <script>
 (function() {
     function initStickyTabs() {
-        const tabList = document.querySelector('[data-baseweb="tab-list"]');
+        // Access parent document (Streamlit's main document, not the iframe)
+        const doc = window.parent.document;
+        const tabList = doc.querySelector('[data-baseweb="tab-list"]');
         if (!tabList) { setTimeout(initStickyTabs, 500); return; }
+        if (tabList.dataset.stickyInit) return;
+        tabList.dataset.stickyInit = '1';
 
-        // Find the scrollable container (Streamlit's main scroll area)
-        let scrollParent = tabList.closest('[data-testid="stMain"]')
-                        || tabList.closest('.main')
-                        || document.querySelector('section.main');
-        if (!scrollParent) { setTimeout(initStickyTabs, 500); return; }
-
-        // Get the scroll container (the one that actually scrolls)
-        let scroller = scrollParent.querySelector('.block-container')
-                    ? scrollParent
-                    : scrollParent.parentElement;
-
-        const originalTop = tabList.getBoundingClientRect().top + window.scrollY;
-
-        // Use IntersectionObserver or scroll listener on the correct element
-        const mainEl = document.querySelector('[data-testid="stAppViewContainer"]')
-                    || document.querySelector('section.main');
+        // Create a placeholder to preserve layout when tabs become fixed
+        const placeholder = doc.createElement('div');
+        placeholder.style.display = 'none';
+        tabList.parentElement.insertBefore(placeholder, tabList);
 
         function handleScroll() {
-            const rect = tabList.parentElement.getBoundingClientRect();
+            const parent = tabList.parentElement;
+            const rect = placeholder.style.display === 'none'
+                ? tabList.getBoundingClientRect()
+                : placeholder.getBoundingClientRect();
+
             if (rect.top <= 0) {
+                if (placeholder.style.display === 'none') {
+                    placeholder.style.height = tabList.offsetHeight + 'px';
+                    placeholder.style.display = 'block';
+                }
                 tabList.style.position = 'fixed';
                 tabList.style.top = '0';
-                tabList.style.left = rect.left + 'px';
-                tabList.style.width = rect.width + 'px';
+                tabList.style.left = parent.getBoundingClientRect().left + 'px';
+                tabList.style.width = parent.offsetWidth + 'px';
                 tabList.style.zIndex = '999';
                 tabList.style.boxShadow = '0 2px 8px rgba(0,0,0,0.12)';
             } else {
@@ -660,18 +661,18 @@ st.markdown("""
                 tabList.style.width = '';
                 tabList.style.zIndex = '';
                 tabList.style.boxShadow = '';
+                placeholder.style.display = 'none';
             }
         }
 
-        // Listen on window scroll and any Streamlit scroll containers
-        window.addEventListener('scroll', handleScroll, true);
+        // Listen on scroll with capture to catch all scroll events
+        window.parent.addEventListener('scroll', handleScroll, true);
         handleScroll();
     }
-    // Wait for Streamlit to fully render
-    setTimeout(initStickyTabs, 1000);
+    setTimeout(initStickyTabs, 1500);
 })();
 </script>
-""", unsafe_allow_html=True)
+""", height=0)
 
 # === CARGAR DATOS ===
 datos_base = obtener_datos_base()
