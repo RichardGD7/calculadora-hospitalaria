@@ -1,6 +1,6 @@
 # Documento Técnico — Calculadora de Capacidad Sanoviv
 
-**Versión:** 1.2
+**Versión:** 1.3
 **Fecha:** Marzo 2026
 **Desarrollado por:** Arkode
 
@@ -38,9 +38,10 @@ La aplicación no almacena datos de pacientes individuales ni información perso
 
 ```
 calculadora-hospitalaria/
-├── app.py                  # Interfaz de usuario (Streamlit) — 2,456 líneas
+├── app.py                  # Interfaz de usuario (Streamlit) — 2,471 líneas
 ├── optimizador_v2.py       # Motor de optimización ILP — 658 líneas
 ├── BD_sanoviv.py           # Base de datos (archivo Python) — 7,605 líneas
+├── MANUAL_USUARIO.md       # Manual de usuario (convertir a PDF)
 ├── requirements.txt        # Dependencias del proyecto
 ├── .streamlit/
 │   └── config.toml         # Configuración de tema (light)
@@ -84,7 +85,7 @@ Aplicación Streamlit con las siguientes pestañas (en orden de aparición):
 | Resources | Uso real de recursos calculado con consumo específico por semana, independiente del optimizador |
 | Verify Admission | Verificación de factibilidad para admitir nuevos pacientes (siempre en semana 1) |
 | Optimization Results | Resultados del optimizador basado en promedios semanales (con banner de advertencia) |
-| Administration | Gestión de programas, actividades y recursos (requiere contraseña). Incluye guía paso a paso para crear programas |
+| Administration | Gestión de programas, actividades y recursos (requiere contraseña). Incluye guía paso a paso para crear programas. Campo "Base Program" se deshabilita automáticamente para programas no-extensión |
 
 ---
 
