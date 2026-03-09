@@ -439,23 +439,44 @@ st.markdown(f"""
 
     /* Header principal */
     .main-header {{
-        background: linear-gradient(135deg, {COLORS["primary"]} 0%, {COLORS["secondary"]} 100%);
-        padding: 2rem 2.5rem;
-        border-radius: 16px;
-        margin-bottom: 2rem;
-        color: white;
+        background: linear-gradient(to right, {COLORS["primary"]} 0%, {COLORS["secondary"]} 40%, #FFFFFF 100%);
+        padding: 0.5rem 1.5rem;
+        border-radius: 10px;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        border: 1px solid #E2E8F0;
+    }}
+
+    .main-header .header-text {{
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
     }}
 
     .main-header h1 {{
         margin: 0;
-        font-size: 2rem;
+        font-size: 1.15rem;
         font-weight: 600;
+        white-space: nowrap;
+        color: white;
     }}
 
     .main-header p {{
-        margin: 0.5rem 0 0 0;
-        opacity: 0.9;
-        font-size: 1rem;
+        margin: 0;
+        opacity: 0.85;
+        font-size: 0.8rem;
+        color: white;
+    }}
+
+    .main-header .header-logo {{
+        margin-left: auto;
+    }}
+
+    .main-header .header-logo img {{
+        height: 40px;
+        object-fit: contain;
     }}
 
     /* Tarjetas de métricas */
@@ -496,12 +517,16 @@ st.markdown(f"""
         color: {COLORS["accent"]};
     }}
 
-    /* Pestañas personalizadas */
+    /* Pestañas personalizadas — sticky en la parte superior */
     .stTabs [data-baseweb="tab-list"] {{
         gap: 8px;
         background-color: {COLORS["light"]};
         padding: 0.5rem;
         border-radius: 12px;
+        position: sticky;
+        top: 0;
+        z-index: 999;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }}
 
     .stTabs [data-baseweb="tab"] {{
@@ -579,10 +604,22 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # === MAIN HEADER ===
-st.markdown("""
+import base64 as _b64
+_logo_path = os.path.join(os.path.dirname(__file__), "sanoviv logo.jpg")
+try:
+    with open(_logo_path, "rb") as _f:
+        _logo_b64 = _b64.b64encode(_f.read()).decode()
+    _logo_html = f'<div class="header-logo"><img src="data:image/jpeg;base64,{_logo_b64}" alt="Sanoviv"></div>'
+except FileNotFoundError:
+    _logo_html = ""
+
+st.markdown(f"""
 <div class="main-header">
-    <h1>Sanoviv - Capacity Optimization</h1>
-    <p>Patient planning system by treatment program</p>
+    <div class="header-text">
+        <h1>Sanoviv - Capacity Optimization</h1>
+        <p>| Patient planning system by treatment program</p>
+    </div>
+    {_logo_html}
 </div>
 """, unsafe_allow_html=True)
 

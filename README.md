@@ -1,6 +1,6 @@
 # Documento Técnico — Calculadora de Capacidad Sanoviv
 
-**Versión:** 1.3
+**Versión:** 1.4
 **Fecha:** Marzo 2026
 **Desarrollado por:** Arkode
 
@@ -38,10 +38,12 @@ La aplicación no almacena datos de pacientes individuales ni información perso
 
 ```
 calculadora-hospitalaria/
-├── app.py                  # Interfaz de usuario (Streamlit) — 2,471 líneas
+├── app.py                  # Interfaz de usuario (Streamlit) — 2,508 líneas
 ├── optimizador_v2.py       # Motor de optimización ILP — 658 líneas
 ├── BD_sanoviv.py           # Base de datos (archivo Python) — 7,605 líneas
+├── sanoviv logo.jpg        # Logo de Sanoviv (incrustado en header vía base64)
 ├── MANUAL_USUARIO.md       # Manual de usuario (convertir a PDF)
+├── MANUAL_USUARIO.docx     # Manual de usuario en Word (con placeholders para capturas)
 ├── requirements.txt        # Dependencias del proyecto
 ├── .streamlit/
 │   └── config.toml         # Configuración de tema (light)
@@ -77,7 +79,7 @@ Contiene la lógica de cálculo sin interfaz visual:
 
 ### 3.3 app.py — Interfaz de Usuario
 
-Aplicación Streamlit con las siguientes pestañas (en orden de aparición):
+Aplicación Streamlit con header que incluye logo de Sanoviv (cargado vía base64 desde `sanoviv logo.jpg`) y pestañas sticky que permanecen visibles al hacer scroll. Pestañas en orden de aparición:
 
 | Pestaña | Función |
 |---|---|
