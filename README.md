@@ -1,6 +1,6 @@
 # Documento Técnico — Calculadora de Capacidad Sanoviv
 
-**Versión:** 1.1
+**Versión:** 1.2
 **Fecha:** Marzo 2026
 **Desarrollado por:** Arkode
 
@@ -84,7 +84,7 @@ Aplicación Streamlit con las siguientes pestañas (en orden de aparición):
 | Resources | Uso real de recursos calculado con consumo específico por semana, independiente del optimizador |
 | Verify Admission | Verificación de factibilidad para admitir nuevos pacientes (siempre en semana 1) |
 | Optimization Results | Resultados del optimizador basado en promedios semanales (con banner de advertencia) |
-| Administration | Gestión de programas, actividades y recursos (requiere contraseña) |
+| Administration | Gestión de programas, actividades y recursos (requiere contraseña). Incluye guía paso a paso para crear programas |
 
 ---
 
@@ -115,10 +115,17 @@ Aplicación Streamlit con las siguientes pestañas (en orden de aparición):
      ↓
 2. Puede editar: programas, actividades (con distribución semanal W1/W2/W3), recursos
      ↓
-3. Puede crear nuevos programas con actividades y distribución semanal
+3. Puede crear nuevos programas:
+   a. Seleccionar tipo (programa o extensión). Si es programa, el campo
+      "Base Program" se deshabilita automáticamente
+   b. Llenar datos y presionar "Create Program" (botón azul primario)
+   c. Agregar actividades con distribución semanal
+   d. Presionar "Save All Changes" al final de la página para persistir
      ↓
 4. Al guardar → se regenera BD_sanoviv.py y se recarga la aplicación
 ```
+
+> **Nota UX:** La creación de programas incluye un banner informativo que guía al usuario paso a paso. El botón "Save All Changes" al final de la página está separado visualmente con un banner explicativo para evitar confusión con el botón "Create Program".
 
 ### 4.3 Cálculo de Consumo de Recursos
 
