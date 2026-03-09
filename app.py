@@ -517,25 +517,12 @@ st.markdown(f"""
         color: {COLORS["accent"]};
     }}
 
-    /* Fix Streamlit containers to allow sticky positioning */
-    .main .block-container, [data-testid="stVerticalBlock"],
-    .stMainBlockContainer, [data-testid="stMain"],
-    .stApp [data-testid="stAppViewContainer"],
-    .stApp [data-testid="stAppViewBlockContainer"],
-    section[data-testid="stMain"] > div {{
-        overflow: visible !important;
-    }}
-
-    /* Pestañas personalizadas — sticky en la parte superior */
+    /* Pestañas personalizadas */
     .stTabs [data-baseweb="tab-list"] {{
         gap: 8px;
         background-color: {COLORS["light"]};
         padding: 0.5rem;
         border-radius: 12px;
-        position: sticky;
-        top: 0;
-        z-index: 999;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }}
 
     .stTabs [data-baseweb="tab"] {{
@@ -630,6 +617,60 @@ st.markdown(f"""
     </div>
     {_logo_html}
 </div>
+""", unsafe_allow_html=True)
+
+# === STICKY TABS via JS ===
+st.markdown("""
+<script>
+(function() {
+    function initStickyTabs() {
+        const tabList = document.querySelector('[data-baseweb="tab-list"]');
+        if (!tabList) { setTimeout(initStickyTabs, 500); return; }
+
+        // Find the scrollable container (Streamlit's main scroll area)
+        let scrollParent = tabList.closest('[data-testid="stMain"]')
+                        || tabList.closest('.main')
+                        || document.querySelector('section.main');
+        if (!scrollParent) { setTimeout(initStickyTabs, 500); return; }
+
+        // Get the scroll container (the one that actually scrolls)
+        let scroller = scrollParent.querySelector('.block-container')
+                    ? scrollParent
+                    : scrollParent.parentElement;
+
+        const originalTop = tabList.getBoundingClientRect().top + window.scrollY;
+
+        // Use IntersectionObserver or scroll listener on the correct element
+        const mainEl = document.querySelector('[data-testid="stAppViewContainer"]')
+                    || document.querySelector('section.main');
+
+        function handleScroll() {
+            const rect = tabList.parentElement.getBoundingClientRect();
+            if (rect.top <= 0) {
+                tabList.style.position = 'fixed';
+                tabList.style.top = '0';
+                tabList.style.left = rect.left + 'px';
+                tabList.style.width = rect.width + 'px';
+                tabList.style.zIndex = '999';
+                tabList.style.boxShadow = '0 2px 8px rgba(0,0,0,0.12)';
+            } else {
+                tabList.style.position = '';
+                tabList.style.top = '';
+                tabList.style.left = '';
+                tabList.style.width = '';
+                tabList.style.zIndex = '';
+                tabList.style.boxShadow = '';
+            }
+        }
+
+        // Listen on window scroll and any Streamlit scroll containers
+        window.addEventListener('scroll', handleScroll, true);
+        handleScroll();
+    }
+    // Wait for Streamlit to fully render
+    setTimeout(initStickyTabs, 1000);
+})();
+</script>
 """, unsafe_allow_html=True)
 
 # === CARGAR DATOS ===
