@@ -18,12 +18,13 @@ programas : dict[str, dict]
         tipo            : str   ("programa" | "extension")
         programa_base   : str   (solo en extensiones — nombre del programa base)
         actividades     : list[dict]
-            nombre          : str   (debe existir en catalogo_actividades)
-            tipo            : str   (heredado del catálogo)
-            cantidad        : int   (ocurrencias por estancia completa)
-            duracion_min    : int   (heredado del catálogo)
-            recursos_prof   : list[str]   (heredado del catálogo)
-            recurso_fis     : str | None  (heredado del catálogo)
+            nombre              : str   (debe existir en catalogo_actividades)
+            tipo                : str   (heredado del catálogo)
+            cantidad            : int   (ocurrencias por estancia completa)
+            duracion_min        : int   (heredado del catálogo)
+            recursos_prof       : list[str]   (heredado del catálogo)
+            recurso_fis         : str | None  (heredado del catálogo)
+            cantidad_por_semana : list[int]   (distribución por semana, sum == cantidad)
 
 recursos_profesionales : list[dict]
     departamento, nombre, num_personas,
@@ -679,6 +680,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Dentist', 'Dental Assistant'],
                 "recurso_fis":   'Dental Evaluation Unit',
+                "cantidad_por_semana": [1, 0, 0],
             },
             {
                 "nombre":        'Dental Initial Consultation',
@@ -687,6 +689,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Dentist', 'Dental Assistant'],
                 "recurso_fis":   'Dental Evaluation Unit',
+                "cantidad_por_semana": [1, 0, 0],
             },
             {
                 "nombre":        'Laparoscopy Surgery',
@@ -695,6 +698,7 @@ programas = {
                 "duracion_min":  120,
                 "recursos_prof": ['Oncologist (and Surgeon)', 'Nurse - Operating Room'],
                 "recurso_fis":   'Operating Room',
+                "cantidad_por_semana": [0, 0, 1],
             },
             {
                 "nombre":        'Subclavian Catheter Placement',
@@ -703,6 +707,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Oncologist (and Surgeon)', 'Nurse - Operating Room'],
                 "recurso_fis":   'Operating Room',
+                "cantidad_por_semana": [1, 0, 0],
             },
             {
                 "nombre":        'Bedroom Use',
@@ -711,6 +716,7 @@ programas = {
                 "duracion_min":  1440,
                 "recursos_prof": [],
                 "recurso_fis":   'Bedroom',
+                "cantidad_por_semana": [7, 7, 7],
             },
             {
                 "nombre":        'Dining Area Use',
@@ -719,6 +725,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": [],
                 "recurso_fis":   'Dining Area',
+                "cantidad_por_semana": [21, 21, 21],
             },
             {
                 "nombre":        'Dental X-Ray / Panoramic',
@@ -727,6 +734,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['Dental Assistant'],
                 "recurso_fis":   'Radiology Room',
+                "cantidad_por_semana": [1, 0, 0],
             },
             {
                 "nombre":        'Full Body Hyperthermia',
@@ -735,6 +743,7 @@ programas = {
                 "duracion_min":  120,
                 "recursos_prof": ['Nurse - Hyperthermia'],
                 "recurso_fis":   'Full Body Hyperthermia Chamber',
+                "cantidad_por_semana": [2, 2, 2],
             },
             {
                 "nombre":        'Regional Hyperthermia',
@@ -743,6 +752,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Nurse - Hyperthermia'],
                 "recurso_fis":   'Regional Hyperthermia Chamber',
+                "cantidad_por_semana": [3, 3, 3],
             },
             {
                 "nombre":        'Electrocardiogram (EKG)',
@@ -751,6 +761,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Nursing Bed - Hyperthermia Recovery',
+                "cantidad_por_semana": [1, 0, 0],
             },
             {
                 "nombre":        'IV: Amygdalin',
@@ -759,6 +770,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [2, 2, 2],
             },
             {
                 "nombre":        'IV: Artesunate (240 mg)',
@@ -767,6 +779,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [1, 1, 1],
             },
             {
                 "nombre":        'IV: Chelation',
@@ -775,6 +788,7 @@ programas = {
                 "duracion_min":  45,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [1, 1, 1],
             },
             {
                 "nombre":        'IV: Macrophage Activating Protein Therapy',
@@ -783,6 +797,7 @@ programas = {
                 "duracion_min":  20,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [3, 3, 3],
             },
             {
                 "nombre":        'IV: Vitamin C - 25 grams',
@@ -791,6 +806,7 @@ programas = {
                 "duracion_min":  120,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [1, 0, 0],
             },
             {
                 "nombre":        'IV: Vitamin C - 50 grams',
@@ -799,6 +815,7 @@ programas = {
                 "duracion_min":  120,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [0, 1, 0],
             },
             {
                 "nombre":        'IV: Vitamin C - 75 grams',
@@ -807,6 +824,7 @@ programas = {
                 "duracion_min":  180,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [0, 1, 3],
             },
             {
                 "nombre":        'Max Pulse',
@@ -815,6 +833,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [1, 0, 0],
             },
             {
                 "nombre":        'Bioenergy Field Measurement (Biowell)',
@@ -823,6 +842,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [1, 0, 0],
             },
             {
                 "nombre":        'Quiet Room 60 min',
@@ -831,6 +851,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [6, 6, 6],
             },
             {
                 "nombre":        'Medical SPA Session 30 min',
@@ -839,6 +860,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [0, 1, 1],
             },
             {
                 "nombre":        'Medical SPA Session 60 min',
@@ -847,6 +869,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [4, 3, 3],
             },
             {
                 "nombre":        'Medical SPA Session 90 min',
@@ -855,6 +878,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [0, 0, 1],
             },
             {
                 "nombre":        'Dental Cleaning',
@@ -863,6 +887,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Dental Hygienist'],
                 "recurso_fis":   'Dental Treatment Unit',
+                "cantidad_por_semana": [1, 0, 0],
             },
             {
                 "nombre":        'Fitness Discharge Consultation',
@@ -871,6 +896,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [0, 0, 1],
             },
             {
                 "nombre":        'Initial Fitness Consultation',
@@ -879,6 +905,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1, 0, 0],
             },
             {
                 "nombre":        'Individual Fitness Session',
@@ -887,6 +914,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1, 2, 1],
             },
             {
                 "nombre":        'Admission Consultation',
@@ -895,6 +923,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Doctor on-call'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1, 0, 0],
             },
             {
                 "nombre":        'Medical Discharge Consultation',
@@ -903,6 +932,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [0, 0, 1],
             },
             {
                 "nombre":        'Initial Medical Consultation',
@@ -911,6 +941,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1, 0, 0],
             },
             {
                 "nombre":        'Medical Follow-up Consultation',
@@ -919,6 +950,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [4, 5, 3],
             },
             {
                 "nombre":        'Mind-Body Discharge Consultation',
@@ -927,6 +959,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [0, 0, 1],
             },
             {
                 "nombre":        'Mind-Body Follow-up Consultation',
@@ -935,6 +968,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1, 3, 2],
             },
             {
                 "nombre":        'Initial Mind-Body Therapy Consultation',
@@ -943,6 +977,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1, 0, 0],
             },
             {
                 "nombre":        'Bioelectrical Bioimpedance',
@@ -951,6 +986,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   'Nutrition Office',
+                "cantidad_por_semana": [1, 0, 1],
             },
             {
                 "nombre":        'Nutrition Discharge Consultation',
@@ -959,6 +995,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [0, 0, 1],
             },
             {
                 "nombre":        'Nutrition Follow-up Consultation',
@@ -967,6 +1004,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [2, 3, 2],
             },
             {
                 "nombre":        'Initial Nutrition Consultation',
@@ -975,6 +1013,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   'Nutrition Office',
+                "cantidad_por_semana": [1, 0, 0],
             },
             {
                 "nombre":        'Psychology Discharge Consultation',
@@ -983,6 +1022,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [0, 0, 1],
             },
             {
                 "nombre":        'Psychology Follow-up Consultation',
@@ -991,6 +1031,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [2, 3, 2],
             },
             {
                 "nombre":        'Initial Psychology Consultation',
@@ -999,6 +1040,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [1, 0, 0],
             },
             {
                 "nombre":        'Sample Collection - Laboratory Studies',
@@ -1007,6 +1049,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['R&D Chemist'],
                 "recurso_fis":   'Phlebotomy Room',
+                "cantidad_por_semana": [1, 0, 0],
             },
             {
                 "nombre":        'Chiropractic Discharge Consultation',
@@ -1015,6 +1058,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [0, 0, 1],
             },
             {
                 "nombre":        'Chiropractic Follow-up Consultation',
@@ -1023,6 +1067,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1, 1, 1],
             },
             {
                 "nombre":        'Initial Chiropractic Consultation',
@@ -1031,6 +1076,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1, 0, 0],
             },
             {
                 "nombre":        'Abdomino-pelvic and Breast Ultrasound',
@@ -1039,6 +1085,7 @@ programas = {
                 "duracion_min":  45,
                 "recursos_prof": ['Radiologist'],
                 "recurso_fis":   'Ultrasound',
+                "cantidad_por_semana": [1, 0, 0],
             },
             {
                 "nombre":        'Colon Hydrotherapy',
@@ -1047,6 +1094,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Colonic Technician'],
                 "recurso_fis":   'Colon Hydrotherapy Office',
+                "cantidad_por_semana": [2, 2, 2],
             },
             {
                 "nombre":        'Hyperbaric Oxygen',
@@ -1055,6 +1103,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Hyperbaric Technician / Nurse'],
                 "recurso_fis":   'Hyperbaric Chamber',
+                "cantidad_por_semana": [4, 4, 4],
             },
             {
                 "nombre":        'Chest X-Ray PA and Lateral',
@@ -1063,6 +1112,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['Radiology Technician'],
                 "recurso_fis":   'Radiology Room',
+                "cantidad_por_semana": [1, 0, 1],
             },
             {
                 "nombre":        'Computed Tomography (CT)',
@@ -1071,6 +1121,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Radiology Technician'],
                 "recurso_fis":   'CT Scan',
+                "cantidad_por_semana": [0, 0, 1],
             },
         ],
     },
@@ -1086,6 +1137,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Oncologist (and Surgeon)', 'Nurse - Operating Room'],
                 "recurso_fis":   'Operating Room',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Dental Follow-up Consultation',
@@ -1094,6 +1146,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Dentist', 'Dental Assistant'],
                 "recurso_fis":   'Dental Evaluation Unit',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Dental Initial Consultation',
@@ -1102,6 +1155,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Dentist', 'Dental Assistant'],
                 "recurso_fis":   'Dental Evaluation Unit',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Ozone Autohemotherapy (60 min)',
@@ -1110,6 +1164,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Ozone Machine',
+                "cantidad_por_semana": [2, 2],
             },
             {
                 "nombre":        'Bioelectrical Bioimpedance',
@@ -1118,6 +1173,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   'Nutrition Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Admission Consultation',
@@ -1126,6 +1182,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Doctor on-call'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Fitness Discharge Consultation',
@@ -1134,6 +1191,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Mind-Body Discharge Consultation',
@@ -1142,6 +1200,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Nutrition Discharge Consultation',
@@ -1150,6 +1209,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Psychology Discharge Consultation',
@@ -1158,6 +1218,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Chiropractic Discharge Consultation',
@@ -1166,6 +1227,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Mind-Body Follow-up Consultation',
@@ -1174,6 +1236,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1, 1],
             },
             {
                 "nombre":        'Nutrition Follow-up Consultation',
@@ -1182,6 +1245,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [2, 2],
             },
             {
                 "nombre":        'Psychology Follow-up Consultation',
@@ -1190,6 +1254,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [3, 1],
             },
             {
                 "nombre":        'Chiropractic Follow-up Consultation',
@@ -1198,6 +1263,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [2, 1],
             },
             {
                 "nombre":        'Initial Fitness Consultation',
@@ -1206,6 +1272,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Initial Nutrition Consultation',
@@ -1214,6 +1281,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   'Nutrition Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Initial Psychology Consultation',
@@ -1222,6 +1290,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Initial Chiropractic Consultation',
@@ -1230,6 +1299,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Initial Mind-Body Therapy Consultation',
@@ -1238,6 +1308,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Medical Discharge Consultation',
@@ -1246,6 +1317,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Initial Medical Consultation',
@@ -1254,6 +1326,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Medical Follow-up Consultation',
@@ -1262,6 +1335,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [4, 4],
             },
             {
                 "nombre":        'Electrocardiogram (EKG)',
@@ -1270,6 +1344,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Nursing Bed - Hyperthermia Recovery',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Colon Hydrotherapy',
@@ -1278,6 +1353,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Colonic Technician'],
                 "recurso_fis":   'Colon Hydrotherapy Office',
+                "cantidad_por_semana": [2, 2],
             },
             {
                 "nombre":        'Full Body Hyperthermia with Sedation',
@@ -1286,6 +1362,7 @@ programas = {
                 "duracion_min":  258,
                 "recursos_prof": ['Nurse - Hyperthermia'],
                 "recurso_fis":   'Full Body Hyperthermia Chamber',
+                "cantidad_por_semana": [1, 1],
             },
             {
                 "nombre":        'IV: Alpha Lipoic Acid',
@@ -1294,6 +1371,7 @@ programas = {
                 "duracion_min":  40,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [1, 3],
             },
             {
                 "nombre":        'IV: Artesunate (240 mg)',
@@ -1302,6 +1380,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [2, 2],
             },
             {
                 "nombre":        'IV: Methylene Blue',
@@ -1310,6 +1389,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [0, 2],
             },
             {
                 "nombre":        'IV: Cellular Nutrition',
@@ -1318,6 +1398,7 @@ programas = {
                 "duracion_min":  120,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [1, 1],
             },
             {
                 "nombre":        'IV: Glutathione',
@@ -1326,6 +1407,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [2, 4],
             },
             {
                 "nombre":        'IV: Chelation',
@@ -1334,6 +1416,7 @@ programas = {
                 "duracion_min":  45,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [1, 1],
             },
             {
                 "nombre":        'IV: Electrolyte Solution',
@@ -1342,6 +1425,7 @@ programas = {
                 "duracion_min":  180,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [1, 1],
             },
             {
                 "nombre":        'IV: Superimmune',
@@ -1350,6 +1434,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [2, 2],
             },
             {
                 "nombre":        'Dental Cleaning',
@@ -1358,6 +1443,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Dental Hygienist'],
                 "recurso_fis":   'Dental Treatment Unit',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Max Pulse',
@@ -1366,6 +1452,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Bioenergy Field Measurement (Biowell)',
@@ -1374,6 +1461,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Hyperbaric Oxygen',
@@ -1382,6 +1470,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Hyperbaric Technician / Nurse'],
                 "recurso_fis":   'Hyperbaric Chamber',
+                "cantidad_por_semana": [2, 2],
             },
             {
                 "nombre":        'Quiet Room 60 min',
@@ -1390,6 +1479,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [3, 3],
             },
             {
                 "nombre":        'Dental X-Ray / Panoramic',
@@ -1398,6 +1488,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['Dental Assistant'],
                 "recurso_fis":   'Radiology Room',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Chest X-Ray PA and Lateral',
@@ -1406,6 +1497,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['Radiology Technician'],
                 "recurso_fis":   'Radiology Room',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Medical SPA Session 60 min',
@@ -1414,6 +1506,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [2, 4],
             },
             {
                 "nombre":        'Individual Fitness Session',
@@ -1422,6 +1515,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Sample Collection - Laboratory Studies',
@@ -1430,6 +1524,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['R&D Chemist'],
                 "recurso_fis":   'Phlebotomy Room',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Abdomino-pelvic and Breast Ultrasound',
@@ -1438,6 +1533,7 @@ programas = {
                 "duracion_min":  45,
                 "recursos_prof": ['Radiologist'],
                 "recurso_fis":   'Ultrasound',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Dining Area Use',
@@ -1446,6 +1542,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": [],
                 "recurso_fis":   'Dining Area',
+                "cantidad_por_semana": [21, 21],
             },
             {
                 "nombre":        'Bedroom Use',
@@ -1454,6 +1551,7 @@ programas = {
                 "duracion_min":  1440,
                 "recursos_prof": [],
                 "recurso_fis":   'Bedroom',
+                "cantidad_por_semana": [7, 7],
             },
         ],
     },
@@ -1469,6 +1567,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Dentist', 'Dental Assistant'],
                 "recurso_fis":   'Dental Evaluation Unit',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Dental Initial Consultation',
@@ -1477,6 +1576,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Dentist', 'Dental Assistant'],
                 "recurso_fis":   'Dental Evaluation Unit',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Bioelectrical Bioimpedance',
@@ -1485,6 +1585,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   'Nutrition Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Admission Consultation',
@@ -1493,6 +1594,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Doctor on-call'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Fitness Discharge Consultation',
@@ -1501,6 +1603,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Mind-Body Discharge Consultation',
@@ -1509,6 +1612,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Nutrition Discharge Consultation',
@@ -1517,6 +1621,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Psychology Discharge Consultation',
@@ -1525,6 +1630,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Chiropractic Discharge Consultation',
@@ -1533,6 +1639,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Nutrition Follow-up Consultation',
@@ -1541,6 +1648,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Fitness Consultation',
@@ -1549,6 +1657,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Nutrition Consultation',
@@ -1557,6 +1666,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   'Nutrition Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Psychology Consultation',
@@ -1565,6 +1675,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Chiropractic Consultation',
@@ -1573,6 +1684,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Mind-Body Therapy Consultation',
@@ -1581,6 +1693,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical Discharge Consultation',
@@ -1589,6 +1702,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Medical Consultation',
@@ -1597,6 +1711,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical Follow-up Consultation',
@@ -1605,6 +1720,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Electrocardiogram (EKG)',
@@ -1613,6 +1729,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Nursing Bed - Hyperthermia Recovery',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Colon Hydrotherapy',
@@ -1621,6 +1738,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Colonic Technician'],
                 "recurso_fis":   'Colon Hydrotherapy Office',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Max Pulse',
@@ -1629,6 +1747,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Bioenergy Field Measurement (Biowell)',
@@ -1637,6 +1756,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Quiet Room 60 min',
@@ -1645,6 +1765,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [6],
             },
             {
                 "nombre":        'Chest X-Ray PA and Lateral',
@@ -1653,6 +1774,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['Radiology Technician'],
                 "recurso_fis":   'Radiology Room',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Sauna Session 60 min',
@@ -1661,6 +1783,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": [],
                 "recurso_fis":   'Sauna',
+                "cantidad_por_semana": [6],
             },
             {
                 "nombre":        'Medical SPA Session 30 min',
@@ -1669,6 +1792,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Medical SPA Session 60 min',
@@ -1677,6 +1801,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [4],
             },
             {
                 "nombre":        'Medical SPA Session 90 min',
@@ -1685,6 +1810,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Individual Fitness Session',
@@ -1693,6 +1819,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Sample Collection - Laboratory Studies',
@@ -1701,6 +1828,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['R&D Chemist'],
                 "recurso_fis":   'Phlebotomy Room',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'SPA Orientation Tour',
@@ -1709,6 +1837,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Abdomino-pelvic and Breast Ultrasound',
@@ -1717,6 +1846,7 @@ programas = {
                 "duracion_min":  45,
                 "recursos_prof": ['Radiologist'],
                 "recurso_fis":   'Ultrasound',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Dining Area Use',
@@ -1725,6 +1855,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": [],
                 "recurso_fis":   'Dining Area',
+                "cantidad_por_semana": [21],
             },
             {
                 "nombre":        'Bedroom Use',
@@ -1733,6 +1864,7 @@ programas = {
                 "duracion_min":  1440,
                 "recursos_prof": [],
                 "recurso_fis":   'Bedroom',
+                "cantidad_por_semana": [7],
             },
         ],
     },
@@ -1748,6 +1880,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Dentist', 'Dental Assistant'],
                 "recurso_fis":   'Dental Evaluation Unit',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Dental Initial Consultation',
@@ -1756,6 +1889,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Dentist', 'Dental Assistant'],
                 "recurso_fis":   'Dental Evaluation Unit',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Intraarticular Stem Cell Application',
@@ -1764,6 +1898,7 @@ programas = {
                 "duracion_min":  25,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Bemer',
@@ -1772,6 +1907,7 @@ programas = {
                 "duracion_min":  25,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [12],
             },
             {
                 "nombre":        'Bioelectrical Bioimpedance',
@@ -1780,6 +1916,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   'Nutrition Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Admission Consultation',
@@ -1788,6 +1925,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Doctor on-call'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Fitness Discharge Consultation',
@@ -1796,6 +1934,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Mind-Body Discharge Consultation',
@@ -1804,6 +1943,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Nutrition Discharge Consultation',
@@ -1812,6 +1952,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Psychology Discharge Consultation',
@@ -1820,6 +1961,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Chiropractic Discharge Consultation',
@@ -1828,6 +1970,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Nutrition Follow-up Consultation',
@@ -1836,6 +1979,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Chiropractic Follow-up Consultation',
@@ -1844,6 +1988,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Fitness Consultation',
@@ -1852,6 +1997,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Nutrition Consultation',
@@ -1860,6 +2006,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   'Nutrition Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Psychology Consultation',
@@ -1868,6 +2015,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Chiropractic Consultation',
@@ -1876,6 +2024,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Mind-Body Therapy Consultation',
@@ -1884,6 +2033,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical Discharge Consultation',
@@ -1892,6 +2042,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Medical Consultation',
@@ -1900,6 +2051,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical Follow-up Consultation',
@@ -1908,6 +2060,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Electrocardiogram (EKG)',
@@ -1916,6 +2069,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Nursing Bed - Hyperthermia Recovery',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Colon Hydrotherapy',
@@ -1924,6 +2078,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Colonic Technician'],
                 "recurso_fis":   'Colon Hydrotherapy Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'IV: Cellular Nutrition',
@@ -1932,6 +2087,7 @@ programas = {
                 "duracion_min":  120,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'IV: Stem Cells (up to 120 million)',
@@ -1940,6 +2096,7 @@ programas = {
                 "duracion_min":  130,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'IV: Glutathione',
@@ -1948,6 +2105,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Max Pulse',
@@ -1956,6 +2114,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Bioenergy Field Measurement (Biowell)',
@@ -1964,6 +2123,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Hyperbaric Oxygen',
@@ -1972,6 +2132,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Hyperbaric Technician / Nurse'],
                 "recurso_fis":   'Hyperbaric Chamber',
+                "cantidad_por_semana": [5],
             },
             {
                 "nombre":        'Quiet Room 60 min',
@@ -1980,6 +2141,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [3],
             },
             {
                 "nombre":        'X-Ray',
@@ -1988,6 +2150,7 @@ programas = {
                 "duracion_min":  20,
                 "recursos_prof": ['Radiology Technician'],
                 "recurso_fis":   'Radiology Room',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Dental X-Ray / Panoramic',
@@ -1996,6 +2159,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['Dental Assistant'],
                 "recurso_fis":   'Radiology Room',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Chest X-Ray PA and Lateral',
@@ -2004,6 +2168,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['Radiology Technician'],
                 "recurso_fis":   'Radiology Room',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical SPA Session 30 min',
@@ -2012,6 +2177,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical SPA Session 60 min',
@@ -2020,6 +2186,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Medical SPA Session 90 min',
@@ -2028,6 +2195,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Individual Fitness Session',
@@ -2036,6 +2204,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Sample Collection - Laboratory Studies',
@@ -2044,6 +2213,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['R&D Chemist'],
                 "recurso_fis":   'Phlebotomy Room',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'SPA Orientation Tour',
@@ -2052,6 +2222,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Abdomino-pelvic and Breast Ultrasound',
@@ -2060,6 +2231,7 @@ programas = {
                 "duracion_min":  45,
                 "recursos_prof": ['Radiologist'],
                 "recurso_fis":   'Ultrasound',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Thyroid Ultrasound',
@@ -2068,6 +2240,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Radiologist'],
                 "recurso_fis":   'Ultrasound',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Dining Area Use',
@@ -2076,6 +2249,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": [],
                 "recurso_fis":   'Dining Area',
+                "cantidad_por_semana": [21],
             },
             {
                 "nombre":        'Bedroom Use',
@@ -2084,6 +2258,7 @@ programas = {
                 "duracion_min":  1440,
                 "recursos_prof": [],
                 "recurso_fis":   'Bedroom',
+                "cantidad_por_semana": [7],
             },
         ],
     },
@@ -2099,6 +2274,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Dentist', 'Dental Assistant'],
                 "recurso_fis":   'Dental Evaluation Unit',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Dental Initial Consultation',
@@ -2107,6 +2283,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Dentist', 'Dental Assistant'],
                 "recurso_fis":   'Dental Evaluation Unit',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Bioelectrical Bioimpedance',
@@ -2115,6 +2292,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   'Nutrition Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Admission Consultation',
@@ -2123,6 +2301,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Doctor on-call'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Fitness Discharge Consultation',
@@ -2131,6 +2310,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Mind-Body Discharge Consultation',
@@ -2139,6 +2319,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Nutrition Discharge Consultation',
@@ -2147,6 +2328,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Psychology Discharge Consultation',
@@ -2155,6 +2337,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Chiropractic Discharge Consultation',
@@ -2163,6 +2346,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Fitness Consultation',
@@ -2171,6 +2355,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Nutrition Consultation',
@@ -2179,6 +2364,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   'Nutrition Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Psychology Consultation',
@@ -2187,6 +2373,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Chiropractic Consultation',
@@ -2195,6 +2382,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Mind-Body Therapy Consultation',
@@ -2203,6 +2391,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical Discharge Consultation',
@@ -2211,6 +2400,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Medical Consultation',
@@ -2219,6 +2409,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical Follow-up Consultation',
@@ -2227,6 +2418,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Electrocardiogram (EKG)',
@@ -2235,6 +2427,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Nursing Bed - Hyperthermia Recovery',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Quantitative EEG (qEEG Symmetry)',
@@ -2243,6 +2436,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Neurofeedback Therapist'],
                 "recurso_fis":   'Neurofeedback Module',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Colon Hydrotherapy',
@@ -2251,6 +2445,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Colonic Technician'],
                 "recurso_fis":   'Colon Hydrotherapy Office',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Max Pulse',
@@ -2259,6 +2454,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Bioenergy Field Measurement (Biowell)',
@@ -2267,6 +2463,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Assisted Neurofeedback (30 min)',
@@ -2275,6 +2472,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Neurofeedback Therapist'],
                 "recurso_fis":   'Neurofeedback Module',
+                "cantidad_por_semana": [10],
             },
             {
                 "nombre":        'Bedroom Use',
@@ -2283,6 +2481,7 @@ programas = {
                 "duracion_min":  1440,
                 "recursos_prof": [],
                 "recurso_fis":   'Bedroom',
+                "cantidad_por_semana": [7],
             },
             {
                 "nombre":        'Dining Area Use',
@@ -2291,6 +2490,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": [],
                 "recurso_fis":   'Dining Area',
+                "cantidad_por_semana": [21],
             },
             {
                 "nombre":        'Quiet Room 60 min',
@@ -2299,6 +2499,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [6],
             },
             {
                 "nombre":        'Dental X-Ray / Panoramic',
@@ -2307,6 +2508,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['Dental Assistant'],
                 "recurso_fis":   'Radiology Room',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Chest X-Ray PA and Lateral',
@@ -2315,6 +2517,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['Radiology Technician'],
                 "recurso_fis":   'Radiology Room',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Sauna Session 60 min',
@@ -2323,6 +2526,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": [],
                 "recurso_fis":   'Sauna',
+                "cantidad_por_semana": [6],
             },
             {
                 "nombre":        'Medical SPA Session 30 min',
@@ -2331,6 +2535,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [3],
             },
             {
                 "nombre":        'Medical SPA Session 60 min',
@@ -2339,6 +2544,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Medical SPA Session 90 min',
@@ -2347,6 +2553,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Individual Fitness Session',
@@ -2355,6 +2562,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Sample Collection - Laboratory Studies',
@@ -2363,6 +2571,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['R&D Chemist'],
                 "recurso_fis":   'Phlebotomy Room',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'SPA Orientation Tour',
@@ -2371,6 +2580,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Abdomino-pelvic and Breast Ultrasound',
@@ -2379,6 +2589,7 @@ programas = {
                 "duracion_min":  45,
                 "recursos_prof": ['Radiologist'],
                 "recurso_fis":   'Ultrasound',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Remote Neurofeedback',
@@ -2387,6 +2598,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Neurofeedback Therapist'],
                 "recurso_fis":   'Neurofeedback Module',
+                "cantidad_por_semana": [20],
             },
         ],
     },
@@ -2402,6 +2614,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Dentist', 'Dental Assistant'],
                 "recurso_fis":   'Dental Evaluation Unit',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Dental Initial Consultation',
@@ -2410,6 +2623,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Dentist', 'Dental Assistant'],
                 "recurso_fis":   'Dental Evaluation Unit',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Ozone Autohemotherapy (60 min)',
@@ -2418,6 +2632,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Ozone Machine',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Bioelectrical Bioimpedance',
@@ -2426,6 +2641,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   'Nutrition Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Admission Consultation',
@@ -2434,6 +2650,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Doctor on-call'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Fitness Discharge Consultation',
@@ -2442,6 +2659,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Mind-Body Discharge Consultation',
@@ -2450,6 +2668,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Nutrition Discharge Consultation',
@@ -2458,6 +2677,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Psychology Discharge Consultation',
@@ -2466,6 +2686,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Chiropractic Discharge Consultation',
@@ -2474,6 +2695,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Mind-Body Follow-up Consultation',
@@ -2482,6 +2704,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1, 2],
             },
             {
                 "nombre":        'Nutrition Follow-up Consultation',
@@ -2490,6 +2713,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1, 3],
             },
             {
                 "nombre":        'Psychology Follow-up Consultation',
@@ -2498,6 +2722,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [1, 3],
             },
             {
                 "nombre":        'Chiropractic Follow-up Consultation',
@@ -2506,6 +2731,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1, 3],
             },
             {
                 "nombre":        'Initial Fitness Consultation',
@@ -2514,6 +2740,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Initial Nutrition Consultation',
@@ -2522,6 +2749,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   'Nutrition Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Initial Psychology Consultation',
@@ -2530,6 +2758,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Initial Chiropractic Consultation',
@@ -2538,6 +2767,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Initial Mind-Body Therapy Consultation',
@@ -2546,6 +2776,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Medical Discharge Consultation',
@@ -2554,6 +2785,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Initial Medical Consultation',
@@ -2562,6 +2794,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Medical Follow-up Consultation',
@@ -2570,6 +2803,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [4, 3],
             },
             {
                 "nombre":        'Electrocardiogram (EKG)',
@@ -2578,6 +2812,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Nursing Bed - Hyperthermia Recovery',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Colon Hydrotherapy',
@@ -2586,6 +2821,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Colonic Technician'],
                 "recurso_fis":   'Colon Hydrotherapy Office',
+                "cantidad_por_semana": [2, 2],
             },
             {
                 "nombre":        'IV: Alpha Lipoic Acid',
@@ -2594,6 +2830,7 @@ programas = {
                 "duracion_min":  40,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [3, 3],
             },
             {
                 "nombre":        'IV: Glutathione',
@@ -2602,6 +2839,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [2, 4],
             },
             {
                 "nombre":        'IV: Mitochondrial Energy',
@@ -2610,6 +2848,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [3, 3],
             },
             {
                 "nombre":        'Dental Cleaning',
@@ -2618,6 +2857,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Dental Hygienist'],
                 "recurso_fis":   'Dental Treatment Unit',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Max Pulse',
@@ -2626,6 +2866,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Bioenergy Field Measurement (Biowell)',
@@ -2634,6 +2875,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Quiet Room 60 min',
@@ -2642,6 +2884,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [2, 4],
             },
             {
                 "nombre":        'Dental X-Ray / Panoramic',
@@ -2650,6 +2893,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['Dental Assistant'],
                 "recurso_fis":   'Radiology Room',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Chest X-Ray PA and Lateral',
@@ -2658,6 +2902,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['Radiology Technician'],
                 "recurso_fis":   'Radiology Room',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Sauna Session 60 min',
@@ -2666,6 +2911,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": [],
                 "recurso_fis":   'Sauna',
+                "cantidad_por_semana": [5, 7],
             },
             {
                 "nombre":        'Medical SPA Session 60 min',
@@ -2674,6 +2920,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [2, 2],
             },
             {
                 "nombre":        'Medical SPA Session 90 min',
@@ -2682,6 +2929,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [1, 1],
             },
             {
                 "nombre":        'Individual Fitness Session',
@@ -2690,6 +2938,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1, 1],
             },
             {
                 "nombre":        'Perineural Therapy',
@@ -2698,6 +2947,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Sample Collection - Laboratory Studies',
@@ -2706,6 +2956,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['R&D Chemist'],
                 "recurso_fis":   'Phlebotomy Room',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Computed Tomography (CT)',
@@ -2714,6 +2965,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Radiology Technician'],
                 "recurso_fis":   'CT Scan',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'SPA Orientation Tour',
@@ -2722,6 +2974,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Abdomino-pelvic and Breast Ultrasound',
@@ -2730,6 +2983,7 @@ programas = {
                 "duracion_min":  45,
                 "recursos_prof": ['Radiologist'],
                 "recurso_fis":   'Ultrasound',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Thyroid Ultrasound',
@@ -2738,6 +2992,16 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Radiologist'],
                 "recurso_fis":   'Ultrasound',
+                "cantidad_por_semana": [1, 0],
+            },
+            {
+                "nombre":        'Hyperbaric Oxygen',
+                "tipo":          'Terapia',
+                "cantidad":      10,
+                "duracion_min":  90,
+                "recursos_prof": ['Hyperbaric Technician / Nurse'],
+                "recurso_fis":   'Hyperbaric Chamber',
+                "cantidad_por_semana": [5, 5],
             },
             {
                 "nombre":        'Dining Area Use',
@@ -2746,6 +3010,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": [],
                 "recurso_fis":   'Dining Area',
+                "cantidad_por_semana": [21, 21],
             },
             {
                 "nombre":        'Bedroom Use',
@@ -2754,6 +3019,7 @@ programas = {
                 "duracion_min":  1440,
                 "recursos_prof": [],
                 "recurso_fis":   'Bedroom',
+                "cantidad_por_semana": [7, 7],
             },
         ],
     },
@@ -2769,6 +3035,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Dentist', 'Dental Assistant'],
                 "recurso_fis":   'Dental Evaluation Unit',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Dental Initial Consultation',
@@ -2777,6 +3044,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Dentist', 'Dental Assistant'],
                 "recurso_fis":   'Dental Evaluation Unit',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Bioelectrical Bioimpedance',
@@ -2785,6 +3053,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   'Nutrition Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Admission Consultation',
@@ -2793,6 +3062,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Doctor on-call'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Fitness Discharge Consultation',
@@ -2801,6 +3071,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Nutrition Discharge Consultation',
@@ -2809,6 +3080,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Psychology Discharge Consultation',
@@ -2817,6 +3089,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Chiropractic Discharge Consultation',
@@ -2825,6 +3098,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Fitness Consultation',
@@ -2833,6 +3107,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Nutrition Consultation',
@@ -2841,6 +3116,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   'Nutrition Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Psychology Consultation',
@@ -2849,6 +3125,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Chiropractic Consultation',
@@ -2857,6 +3134,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Mind-Body Therapy Consultation',
@@ -2865,6 +3143,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical Discharge Consultation',
@@ -2873,6 +3152,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Medical Consultation',
@@ -2881,6 +3161,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical Follow-up Consultation',
@@ -2889,6 +3170,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Electrocardiogram (EKG)',
@@ -2897,6 +3179,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Nursing Bed - Hyperthermia Recovery',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'IV: Glutathione',
@@ -2905,6 +3188,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'IV: Chelation',
@@ -2913,6 +3197,7 @@ programas = {
                 "duracion_min":  45,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Max Pulse',
@@ -2921,6 +3206,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Bioenergy Field Measurement (Biowell)',
@@ -2929,6 +3215,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Dental X-Ray / Panoramic',
@@ -2937,6 +3224,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['Dental Assistant'],
                 "recurso_fis":   'Radiology Room',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Chest X-Ray PA and Lateral',
@@ -2945,6 +3233,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['Radiology Technician'],
                 "recurso_fis":   'Radiology Room',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical SPA Session 60 min',
@@ -2953,6 +3242,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Sample Collection - Laboratory Studies',
@@ -2961,6 +3251,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['R&D Chemist'],
                 "recurso_fis":   'Phlebotomy Room',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Abdomino-pelvic and Breast Ultrasound',
@@ -2969,6 +3260,7 @@ programas = {
                 "duracion_min":  45,
                 "recursos_prof": ['Radiologist'],
                 "recurso_fis":   'Ultrasound',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Thyroid Ultrasound',
@@ -2977,6 +3269,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Radiologist'],
                 "recurso_fis":   'Ultrasound',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Dining Area Use',
@@ -2985,6 +3278,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": [],
                 "recurso_fis":   'Dining Area',
+                "cantidad_por_semana": [12],
             },
             {
                 "nombre":        'Bedroom Use',
@@ -2993,6 +3287,7 @@ programas = {
                 "duracion_min":  1440,
                 "recursos_prof": [],
                 "recurso_fis":   'Bedroom',
+                "cantidad_por_semana": [4],
             },
             {
                 "nombre":        'Specialist Interconsultation',
@@ -3001,6 +3296,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Medical Specialist'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Testicular Ultrasound',
@@ -3009,6 +3305,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Radiologist'],
                 "recurso_fis":   'Ultrasound',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Bilateral Carotid Doppler Ultrasound',
@@ -3017,6 +3314,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Radiologist'],
                 "recurso_fis":   'Ultrasound',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Echocardiogram',
@@ -3025,6 +3323,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Ozone Room',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'CT with IV Contrast',
@@ -3033,6 +3332,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Radiology Technician'],
                 "recurso_fis":   'CT Scan',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Breast Thermography',
@@ -3041,6 +3341,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Radiology Technician'],
                 "recurso_fis":   'Thermograph',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Colonoscopy and Endoscopy',
@@ -3049,6 +3350,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Medical Specialist'],
                 "recurso_fis":   'Gastroenterology',
+                "cantidad_por_semana": [1],
             },
         ],
     },
@@ -3064,6 +3366,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Dentist', 'Dental Assistant'],
                 "recurso_fis":   'Dental Evaluation Unit',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Dental Initial Consultation',
@@ -3072,6 +3375,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Dentist', 'Dental Assistant'],
                 "recurso_fis":   'Dental Evaluation Unit',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Minor Ozone Autohemotherapy',
@@ -3080,6 +3384,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Ozone Machine',
+                "cantidad_por_semana": [0, 4],
             },
             {
                 "nombre":        'Bioelectrical Bioimpedance',
@@ -3088,6 +3393,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   'Nutrition Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Admission Consultation',
@@ -3096,6 +3402,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Doctor on-call'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Fitness Discharge Consultation',
@@ -3104,6 +3411,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Mind-Body Discharge Consultation',
@@ -3112,6 +3420,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Nutrition Discharge Consultation',
@@ -3120,6 +3429,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Psychology Discharge Consultation',
@@ -3128,6 +3438,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Chiropractic Discharge Consultation',
@@ -3136,6 +3447,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Mind-Body Follow-up Consultation',
@@ -3144,6 +3456,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [0, 2],
             },
             {
                 "nombre":        'Nutrition Follow-up Consultation',
@@ -3152,6 +3465,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1, 3],
             },
             {
                 "nombre":        'Psychology Follow-up Consultation',
@@ -3160,6 +3474,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [1, 3],
             },
             {
                 "nombre":        'Chiropractic Follow-up Consultation',
@@ -3168,6 +3483,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [0, 3],
             },
             {
                 "nombre":        'Initial Fitness Consultation',
@@ -3176,6 +3492,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Initial Nutrition Consultation',
@@ -3184,6 +3501,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   'Nutrition Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Initial Psychology Consultation',
@@ -3192,6 +3510,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Initial Chiropractic Consultation',
@@ -3200,6 +3519,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Initial Mind-Body Therapy Consultation',
@@ -3208,6 +3528,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Medical Discharge Consultation',
@@ -3216,6 +3537,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Initial Medical Consultation',
@@ -3224,6 +3546,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Medical Follow-up Consultation',
@@ -3232,6 +3555,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [4, 4],
             },
             {
                 "nombre":        'Echocardiogram',
@@ -3240,6 +3564,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Ozone Room',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Electrocardiogram (EKG)',
@@ -3248,6 +3573,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Nursing Bed - Hyperthermia Recovery',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Colon Hydrotherapy',
@@ -3256,6 +3582,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Colonic Technician'],
                 "recurso_fis":   'Colon Hydrotherapy Office',
+                "cantidad_por_semana": [0, 3],
             },
             {
                 "nombre":        'Full Body Hyperthermia',
@@ -3264,6 +3591,7 @@ programas = {
                 "duracion_min":  120,
                 "recursos_prof": ['Nurse - Hyperthermia'],
                 "recurso_fis":   'Full Body Hyperthermia Chamber',
+                "cantidad_por_semana": [0, 2],
             },
             {
                 "nombre":        'Specialist Interconsultation',
@@ -3272,6 +3600,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Medical Specialist'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1, 1],
             },
             {
                 "nombre":        'IV: Methylene Blue',
@@ -3280,6 +3609,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [0, 2],
             },
             {
                 "nombre":        'IV: Mitochondrial Energy',
@@ -3288,6 +3618,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [0, 2],
             },
             {
                 "nombre":        'Dental Cleaning',
@@ -3296,6 +3627,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Dental Hygienist'],
                 "recurso_fis":   'Dental Treatment Unit',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Max Pulse',
@@ -3304,6 +3636,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Bioenergy Field Measurement (Biowell)',
@@ -3312,6 +3645,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Hyperbaric Oxygen',
@@ -3320,6 +3654,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Hyperbaric Technician / Nurse'],
                 "recurso_fis":   'Hyperbaric Chamber',
+                "cantidad_por_semana": [4, 5],
             },
             {
                 "nombre":        'Protocol PC 1, 2, 3',
@@ -3328,6 +3663,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [1, 9],
             },
             {
                 "nombre":        'Quiet Room 30 min',
@@ -3336,6 +3672,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [0, 6],
             },
             {
                 "nombre":        'Quiet Room 60 min',
@@ -3344,6 +3681,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [1, 3],
             },
             {
                 "nombre":        'Dental X-Ray / Panoramic',
@@ -3352,6 +3690,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['Dental Assistant'],
                 "recurso_fis":   'Radiology Room',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Chest X-Ray PA and Lateral',
@@ -3360,6 +3699,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['Radiology Technician'],
                 "recurso_fis":   'Radiology Room',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Medical SPA Session 60 min',
@@ -3368,6 +3708,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [1, 5],
             },
             {
                 "nombre":        'Medical SPA Session 90 min',
@@ -3376,6 +3717,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [1, 1],
             },
             {
                 "nombre":        'Individual Fitness Session',
@@ -3384,6 +3726,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [0, 4],
             },
             {
                 "nombre":        'Perineural Therapy',
@@ -3392,6 +3735,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Sample Collection - Laboratory Studies',
@@ -3400,6 +3744,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['R&D Chemist'],
                 "recurso_fis":   'Phlebotomy Room',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Computed Tomography (CT)',
@@ -3408,6 +3753,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Radiology Technician'],
                 "recurso_fis":   'CT Scan',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'SPA Orientation Tour',
@@ -3416,6 +3762,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Abdomino-pelvic and Breast Ultrasound',
@@ -3424,6 +3771,7 @@ programas = {
                 "duracion_min":  45,
                 "recursos_prof": ['Radiologist'],
                 "recurso_fis":   'Ultrasound',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Dining Area Use',
@@ -3432,6 +3780,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": [],
                 "recurso_fis":   'Dining Area',
+                "cantidad_por_semana": [21, 21],
             },
             {
                 "nombre":        'Bedroom Use',
@@ -3440,6 +3789,7 @@ programas = {
                 "duracion_min":  1440,
                 "recursos_prof": [],
                 "recurso_fis":   'Bedroom',
+                "cantidad_por_semana": [7, 7],
             },
         ],
     },
@@ -3455,6 +3805,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Dentist', 'Dental Assistant'],
                 "recurso_fis":   'Dental Evaluation Unit',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Dental Initial Consultation',
@@ -3463,6 +3814,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Dentist', 'Dental Assistant'],
                 "recurso_fis":   'Dental Evaluation Unit',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Minor Ozone Autohemotherapy',
@@ -3471,6 +3823,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Ozone Machine',
+                "cantidad_por_semana": [1, 3],
             },
             {
                 "nombre":        'Bioelectrical Bioimpedance',
@@ -3479,6 +3832,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   'Nutrition Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Carsilaza',
@@ -3487,6 +3841,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [1, 1],
             },
             {
                 "nombre":        'Admission Consultation',
@@ -3495,6 +3850,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Doctor on-call'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Fitness Discharge Consultation',
@@ -3503,6 +3859,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Mind-Body Discharge Consultation',
@@ -3511,6 +3868,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Nutrition Discharge Consultation',
@@ -3519,6 +3877,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Psychology Discharge Consultation',
@@ -3527,6 +3886,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Chiropractic Discharge Consultation',
@@ -3535,6 +3895,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Mind-Body Follow-up Consultation',
@@ -3543,6 +3904,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1, 1],
             },
             {
                 "nombre":        'Nutrition Follow-up Consultation',
@@ -3551,6 +3913,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1, 2],
             },
             {
                 "nombre":        'Psychology Follow-up Consultation',
@@ -3559,6 +3922,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [1, 3],
             },
             {
                 "nombre":        'Chiropractic Follow-up Consultation',
@@ -3567,6 +3931,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1, 2],
             },
             {
                 "nombre":        'Initial Fitness Consultation',
@@ -3575,6 +3940,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Initial Nutrition Consultation',
@@ -3583,6 +3949,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   'Nutrition Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Initial Psychology Consultation',
@@ -3591,6 +3958,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Initial Chiropractic Consultation',
@@ -3599,6 +3967,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Initial Mind-Body Therapy Consultation',
@@ -3607,6 +3976,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Medical Discharge Consultation',
@@ -3615,6 +3985,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Initial Medical Consultation',
@@ -3623,6 +3994,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Medical Follow-up Consultation',
@@ -3631,6 +4003,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [4, 4],
             },
             {
                 "nombre":        'Electrocardiogram (EKG)',
@@ -3639,6 +4012,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Nursing Bed - Hyperthermia Recovery',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Quantitative EEG (qEEG Symmetry)',
@@ -3647,6 +4021,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Neurofeedback Therapist'],
                 "recurso_fis":   'Neurofeedback Module',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Sleep Apnea Exam',
@@ -3655,6 +4030,7 @@ programas = {
                 "duracion_min":  45,
                 "recursos_prof": ['Medical Specialist'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Colon Hydrotherapy',
@@ -3663,6 +4039,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Colonic Technician'],
                 "recurso_fis":   'Colon Hydrotherapy Office',
+                "cantidad_por_semana": [1, 2],
             },
             {
                 "nombre":        'Full Body Hyperthermia',
@@ -3671,6 +4048,7 @@ programas = {
                 "duracion_min":  120,
                 "recursos_prof": ['Nurse - Hyperthermia'],
                 "recurso_fis":   'Full Body Hyperthermia Chamber',
+                "cantidad_por_semana": [1, 1],
             },
             {
                 "nombre":        'Specialist Interconsultation',
@@ -3679,6 +4057,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Medical Specialist'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'IV: Methylene Blue',
@@ -3687,6 +4066,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [1, 1],
             },
             {
                 "nombre":        'IV: Cellular Nutrition',
@@ -3695,6 +4075,7 @@ programas = {
                 "duracion_min":  120,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [1, 1],
             },
             {
                 "nombre":        'IV: Stem Cells (up to 120 million)',
@@ -3703,6 +4084,7 @@ programas = {
                 "duracion_min":  130,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Dental Cleaning',
@@ -3711,6 +4093,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Dental Hygienist'],
                 "recurso_fis":   'Dental Treatment Unit',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Max Pulse',
@@ -3719,6 +4102,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Bioenergy Field Measurement (Biowell)',
@@ -3727,6 +4111,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Assisted Neurofeedback (30 min)',
@@ -3735,6 +4120,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Neurofeedback Therapist'],
                 "recurso_fis":   'Neurofeedback Module',
+                "cantidad_por_semana": [10, 10],
             },
             {
                 "nombre":        'Hyperbaric Oxygen',
@@ -3743,6 +4129,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Hyperbaric Technician / Nurse'],
                 "recurso_fis":   'Hyperbaric Chamber',
+                "cantidad_por_semana": [3, 7],
             },
             {
                 "nombre":        'Protocol PC 1, 2, 3',
@@ -3751,6 +4138,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [4, 6],
             },
             {
                 "nombre":        'Quiet Room 60 min',
@@ -3759,6 +4147,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [2, 4],
             },
             {
                 "nombre":        'Dental X-Ray / Panoramic',
@@ -3767,6 +4156,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['Dental Assistant'],
                 "recurso_fis":   'Radiology Room',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Chest X-Ray PA and Lateral',
@@ -3775,6 +4165,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['Radiology Technician'],
                 "recurso_fis":   'Radiology Room',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Brain MRI with Volumetry',
@@ -3783,6 +4174,7 @@ programas = {
                 "duracion_min":  180,
                 "recursos_prof": ['Medical Specialist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Sauna Session 60 min',
@@ -3791,6 +4183,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": [],
                 "recurso_fis":   'Sauna',
+                "cantidad_por_semana": [5, 5],
             },
             {
                 "nombre":        'Medical SPA Session 60 min',
@@ -3799,6 +4192,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [3, 3],
             },
             {
                 "nombre":        'Medical SPA Session 90 min',
@@ -3807,6 +4201,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [1, 1],
             },
             {
                 "nombre":        'Individual Fitness Session',
@@ -3815,6 +4210,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1, 3],
             },
             {
                 "nombre":        'Sample Collection - Laboratory Studies',
@@ -3823,6 +4219,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['R&D Chemist'],
                 "recurso_fis":   'Phlebotomy Room',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'SPA Orientation Tour',
@@ -3831,6 +4228,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Abdomino-pelvic and Breast Ultrasound',
@@ -3839,6 +4237,7 @@ programas = {
                 "duracion_min":  45,
                 "recursos_prof": ['Radiologist'],
                 "recurso_fis":   'Ultrasound',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Bilateral Carotid Doppler Ultrasound',
@@ -3847,6 +4246,16 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Radiologist'],
                 "recurso_fis":   'Ultrasound',
+                "cantidad_por_semana": [1, 0],
+            },
+            {
+                "nombre":        'Subclavian Catheter Placement',
+                "tipo":          'Terapia',
+                "cantidad":      1,
+                "duracion_min":  30,
+                "recursos_prof": ['Oncologist (and Surgeon)', 'Nurse - Operating Room'],
+                "recurso_fis":   'Operating Room',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Dining Area Use',
@@ -3855,6 +4264,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": [],
                 "recurso_fis":   'Dining Area',
+                "cantidad_por_semana": [21, 21],
             },
             {
                 "nombre":        'Bedroom Use',
@@ -3863,6 +4273,7 @@ programas = {
                 "duracion_min":  1440,
                 "recursos_prof": [],
                 "recurso_fis":   'Bedroom',
+                "cantidad_por_semana": [7, 7],
             },
         ],
     },
@@ -3878,6 +4289,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Oncologist (and Surgeon)', 'Nurse - Operating Room'],
                 "recurso_fis":   'Operating Room',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Dental Initial Consultation',
@@ -3886,6 +4298,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Dentist', 'Dental Assistant'],
                 "recurso_fis":   'Dental Evaluation Unit',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Neural Therapy',
@@ -3894,6 +4307,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Dentist', 'Dental Assistant'],
                 "recurso_fis":   'Dental Treatment Unit',
+                "cantidad_por_semana": [1, 1],
             },
             {
                 "nombre":        'Bioelectrical Bioimpedance',
@@ -3902,6 +4316,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   'Nutrition Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Admission Consultation',
@@ -3910,6 +4325,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Doctor on-call'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Fitness Discharge Consultation',
@@ -3918,6 +4334,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Mind-Body Discharge Consultation',
@@ -3926,6 +4343,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Nutrition Discharge Consultation',
@@ -3934,6 +4352,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Psychology Discharge Consultation',
@@ -3942,6 +4361,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Chiropractic Discharge Consultation',
@@ -3950,6 +4370,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Mind-Body Follow-up Consultation',
@@ -3958,6 +4379,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1, 1],
             },
             {
                 "nombre":        'Nutrition Follow-up Consultation',
@@ -3966,6 +4388,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1, 1],
             },
             {
                 "nombre":        'Psychology Follow-up Consultation',
@@ -3974,6 +4397,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [2, 1],
             },
             {
                 "nombre":        'Chiropractic Follow-up Consultation',
@@ -3982,6 +4406,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1, 1],
             },
             {
                 "nombre":        'Initial Fitness Consultation',
@@ -3990,6 +4415,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Initial Nutrition Consultation',
@@ -3998,6 +4424,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   'Nutrition Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Initial Psychology Consultation',
@@ -4006,6 +4433,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Initial Chiropractic Consultation',
@@ -4014,6 +4442,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Initial Mind-Body Therapy Consultation',
@@ -4022,6 +4451,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Medical Discharge Consultation',
@@ -4030,6 +4460,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Initial Medical Consultation',
@@ -4038,6 +4469,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Medical Follow-up Consultation',
@@ -4046,6 +4478,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [4, 2],
             },
             {
                 "nombre":        'Electrocardiogram (EKG)',
@@ -4054,6 +4487,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Nursing Bed - Hyperthermia Recovery',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Colon Hydrotherapy',
@@ -4062,6 +4496,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Colonic Technician'],
                 "recurso_fis":   'Colon Hydrotherapy Office',
+                "cantidad_por_semana": [1, 1],
             },
             {
                 "nombre":        'Full Body Hyperthermia',
@@ -4070,6 +4505,7 @@ programas = {
                 "duracion_min":  120,
                 "recursos_prof": ['Nurse - Hyperthermia'],
                 "recurso_fis":   'Full Body Hyperthermia Chamber',
+                "cantidad_por_semana": [1, 1],
             },
             {
                 "nombre":        'IV: Methylene Blue',
@@ -4078,6 +4514,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [1, 1],
             },
             {
                 "nombre":        'IV: Glutathione',
@@ -4086,6 +4523,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [0, 2],
             },
             {
                 "nombre":        'IV: Chelation',
@@ -4094,6 +4532,7 @@ programas = {
                 "duracion_min":  45,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [0, 2],
             },
             {
                 "nombre":        'Dental Cleaning',
@@ -4102,6 +4541,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Dental Hygienist'],
                 "recurso_fis":   'Dental Treatment Unit',
+                "cantidad_por_semana": [0, 1],
             },
             {
                 "nombre":        'Max Pulse',
@@ -4110,6 +4550,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Bioenergy Field Measurement (Biowell)',
@@ -4118,6 +4559,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Hyperbaric Oxygen',
@@ -4126,6 +4568,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Hyperbaric Technician / Nurse'],
                 "recurso_fis":   'Hyperbaric Chamber',
+                "cantidad_por_semana": [2, 4],
             },
             {
                 "nombre":        'Protocol PC 1, 2, 3',
@@ -4134,6 +4577,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [4, 4],
             },
             {
                 "nombre":        'Quiet Room 60 min',
@@ -4142,6 +4586,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [2, 4],
             },
             {
                 "nombre":        'Dental X-Ray / Panoramic',
@@ -4150,6 +4595,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['Dental Assistant'],
                 "recurso_fis":   'Radiology Room',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Chest X-Ray PA and Lateral',
@@ -4158,6 +4604,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['Radiology Technician'],
                 "recurso_fis":   'Radiology Room',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Sauna Session 60 min',
@@ -4166,6 +4613,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": [],
                 "recurso_fis":   'Sauna',
+                "cantidad_por_semana": [5, 5],
             },
             {
                 "nombre":        'Medical SPA Session 30 min',
@@ -4174,6 +4622,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Medical SPA Session 60 min',
@@ -4182,6 +4631,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [4, 4],
             },
             {
                 "nombre":        'Medical SPA Session 90 min',
@@ -4190,6 +4640,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [1, 1],
             },
             {
                 "nombre":        'Individual Fitness Session',
@@ -4198,6 +4649,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1, 1],
             },
             {
                 "nombre":        'Sample Collection - Laboratory Studies',
@@ -4206,6 +4658,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['R&D Chemist'],
                 "recurso_fis":   'Phlebotomy Room',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'SPA Orientation Tour',
@@ -4214,6 +4667,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Abdomino-pelvic and Breast Ultrasound',
@@ -4222,6 +4676,7 @@ programas = {
                 "duracion_min":  45,
                 "recursos_prof": ['Radiologist'],
                 "recurso_fis":   'Ultrasound',
+                "cantidad_por_semana": [1, 0],
             },
             {
                 "nombre":        'Dining Area Use',
@@ -4230,6 +4685,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": [],
                 "recurso_fis":   'Dining Area',
+                "cantidad_por_semana": [21, 21],
             },
             {
                 "nombre":        'Bedroom Use',
@@ -4238,6 +4694,7 @@ programas = {
                 "duracion_min":  1440,
                 "recursos_prof": [],
                 "recurso_fis":   'Bedroom',
+                "cantidad_por_semana": [7, 7],
             },
         ],
     },
@@ -4253,6 +4710,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Dentist', 'Dental Assistant'],
                 "recurso_fis":   'Dental Evaluation Unit',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Bioelectrical Bioimpedance',
@@ -4261,6 +4719,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   'Nutrition Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Colonoscopy and Endoscopy',
@@ -4269,6 +4728,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Medical Specialist'],
                 "recurso_fis":   'Gastroenterology',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Admission Consultation',
@@ -4277,6 +4737,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Doctor on-call'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Nutrition Discharge Consultation',
@@ -4285,6 +4746,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Nutrition Follow-up Consultation',
@@ -4293,6 +4755,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Fitness Consultation',
@@ -4301,6 +4764,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Nutrition Consultation',
@@ -4309,6 +4773,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   'Nutrition Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Psychology Consultation',
@@ -4317,6 +4782,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Chiropractic Consultation',
@@ -4325,6 +4791,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Mind-Body Therapy Consultation',
@@ -4333,6 +4800,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical Discharge Consultation',
@@ -4341,6 +4809,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Initial Medical Consultation',
@@ -4349,6 +4818,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical Follow-up Consultation',
@@ -4357,6 +4827,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Electrocardiogram (EKG)',
@@ -4365,6 +4836,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Nursing Bed - Hyperthermia Recovery',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Colon Hydrotherapy',
@@ -4373,6 +4845,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Colonic Technician'],
                 "recurso_fis":   'Colon Hydrotherapy Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'FMT Implant',
@@ -4381,6 +4854,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Medical Specialist'],
                 "recurso_fis":   'Gastroenterology',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'IV: Cellular Nutrition',
@@ -4389,6 +4863,7 @@ programas = {
                 "duracion_min":  120,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Max Pulse',
@@ -4397,6 +4872,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Bioenergy Field Measurement (Biowell)',
@@ -4405,6 +4881,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Rectal Ozone (5 min)',
@@ -4413,6 +4890,7 @@ programas = {
                 "duracion_min":  20,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Ozone Room',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Dental X-Ray / Panoramic',
@@ -4421,6 +4899,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['Dental Assistant'],
                 "recurso_fis":   'Radiology Room',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical SPA Session 60 min',
@@ -4429,6 +4908,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Sample Collection - Laboratory Studies',
@@ -4437,6 +4917,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['R&D Chemist'],
                 "recurso_fis":   'Phlebotomy Room',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'SPA Orientation Tour',
@@ -4445,6 +4926,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Dining Area Use',
@@ -4453,6 +4935,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": [],
                 "recurso_fis":   'Dining Area',
+                "cantidad_por_semana": [15],
             },
             {
                 "nombre":        'Bedroom Use',
@@ -4461,6 +4944,7 @@ programas = {
                 "duracion_min":  1440,
                 "recursos_prof": [],
                 "recurso_fis":   'Bedroom',
+                "cantidad_por_semana": [5],
             },
         ],
     },
@@ -4477,6 +4961,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   'Nutrition Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Chiropractic Follow-up Consultation',
@@ -4485,6 +4970,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Chiropractic Discharge Consultation',
@@ -4493,6 +4979,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Colon Hydrotherapy',
@@ -4501,6 +4988,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Colonic Technician'],
                 "recurso_fis":   'Colon Hydrotherapy Office',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Dental Discharge Consultation',
@@ -4509,6 +4997,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Dentist', 'Dental Assistant'],
                 "recurso_fis":   'Dental Evaluation Unit',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Fitness Discharge Consultation',
@@ -4517,6 +5006,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Individual Fitness Session',
@@ -4525,6 +5015,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Hyperbaric Oxygen',
@@ -4533,6 +5024,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Hyperbaric Technician / Nurse'],
                 "recurso_fis":   'Hyperbaric Chamber',
+                "cantidad_por_semana": [4],
             },
             {
                 "nombre":        'Medical Discharge Consultation',
@@ -4541,6 +5033,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical Follow-up Consultation',
@@ -4549,6 +5042,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [4],
             },
             {
                 "nombre":        'Mind-Body Discharge Consultation',
@@ -4557,6 +5051,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Mind-Body Follow-up Consultation',
@@ -4565,6 +5060,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Nutrition Discharge Consultation',
@@ -4573,6 +5069,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Nutrition Follow-up Consultation',
@@ -4581,6 +5078,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Psychology Follow-up Consultation',
@@ -4589,6 +5087,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Quiet Room 60 min',
@@ -4597,6 +5096,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [6],
             },
             {
                 "nombre":        'Regional Hyperthermia',
@@ -4605,6 +5105,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Nurse - Hyperthermia'],
                 "recurso_fis":   'Regional Hyperthermia Chamber',
+                "cantidad_por_semana": [3],
             },
             {
                 "nombre":        'Medical SPA Session 60 min',
@@ -4613,6 +5114,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [4],
             },
             {
                 "nombre":        'Full Body Hyperthermia',
@@ -4621,6 +5123,7 @@ programas = {
                 "duracion_min":  120,
                 "recursos_prof": ['Nurse - Hyperthermia'],
                 "recurso_fis":   'Full Body Hyperthermia Chamber',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'IV: Vitamin C - 75 grams',
@@ -4629,6 +5132,7 @@ programas = {
                 "duracion_min":  180,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'IV: Amygdalin',
@@ -4637,6 +5141,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'IV: Artesunate (240 mg)',
@@ -4645,6 +5150,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'IV: Chelation',
@@ -4653,6 +5159,7 @@ programas = {
                 "duracion_min":  45,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'IV: Macrophage Activating Protein Therapy',
@@ -4661,6 +5168,7 @@ programas = {
                 "duracion_min":  20,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [3],
             },
         ],
     },
@@ -4677,6 +5185,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Doctor on-call'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Bioelectrical Bioimpedance',
@@ -4685,6 +5194,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   'Nutrition Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Hyperbaric Oxygen',
@@ -4693,6 +5203,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Hyperbaric Technician / Nurse'],
                 "recurso_fis":   'Hyperbaric Chamber',
+                "cantidad_por_semana": [3],
             },
             {
                 "nombre":        'Initial Medical Consultation',
@@ -4701,6 +5212,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical Discharge Consultation',
@@ -4709,6 +5221,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical Follow-up Consultation',
@@ -4717,6 +5230,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Nutrition Follow-up Consultation',
@@ -4725,6 +5239,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Psychology Follow-up Consultation',
@@ -4733,6 +5248,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Quiet Room 60 min',
@@ -4741,6 +5257,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [4],
             },
             {
                 "nombre":        'Regional Hyperthermia',
@@ -4749,6 +5266,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Nurse - Hyperthermia'],
                 "recurso_fis":   'Regional Hyperthermia Chamber',
+                "cantidad_por_semana": [4],
             },
             {
                 "nombre":        'Medical SPA Session 60 min',
@@ -4757,6 +5275,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Full Body Hyperthermia',
@@ -4765,6 +5284,7 @@ programas = {
                 "duracion_min":  120,
                 "recursos_prof": ['Nurse - Hyperthermia'],
                 "recurso_fis":   'Full Body Hyperthermia Chamber',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'IV: Amygdalin',
@@ -4773,6 +5293,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'IV: Artesunate (240 mg)',
@@ -4781,6 +5302,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'IV: Macrophage Activating Protein Therapy',
@@ -4789,6 +5311,7 @@ programas = {
                 "duracion_min":  20,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [3],
             },
         ],
     },
@@ -4805,6 +5328,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Chiropractic Discharge Consultation',
@@ -4813,6 +5337,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Colon Hydrotherapy',
@@ -4821,6 +5346,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Colonic Technician'],
                 "recurso_fis":   'Colon Hydrotherapy Office',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Dental Cleaning',
@@ -4829,6 +5355,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Dental Hygienist'],
                 "recurso_fis":   'Dental Treatment Unit',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Fitness Discharge Consultation',
@@ -4837,6 +5364,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Individual Fitness Session',
@@ -4845,6 +5373,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical Discharge Consultation',
@@ -4853,6 +5382,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical Follow-up Consultation',
@@ -4861,6 +5391,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Nutrition Discharge Consultation',
@@ -4869,6 +5400,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Nutrition Follow-up Consultation',
@@ -4877,6 +5409,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Psychology Follow-up Consultation',
@@ -4885,6 +5418,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Quiet Room 60 min',
@@ -4893,6 +5427,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [6],
             },
             {
                 "nombre":        'Sauna Session 60 min',
@@ -4901,6 +5436,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": [],
                 "recurso_fis":   'Sauna',
+                "cantidad_por_semana": [6],
             },
             {
                 "nombre":        'Medical SPA Session 30 min',
@@ -4909,6 +5445,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Medical SPA Session 60 min',
@@ -4917,6 +5454,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [4],
             },
             {
                 "nombre":        'Medical SPA Session 90 min',
@@ -4925,6 +5463,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [2],
             },
         ],
     },
@@ -4941,6 +5480,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Chiropractic Discharge Consultation',
@@ -4949,6 +5489,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Colon Hydrotherapy',
@@ -4957,6 +5498,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Colonic Technician'],
                 "recurso_fis":   'Colon Hydrotherapy Office',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Dental Cleaning',
@@ -4965,6 +5507,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Dental Hygienist'],
                 "recurso_fis":   'Dental Treatment Unit',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Fitness Discharge Consultation',
@@ -4973,6 +5516,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Individual Fitness Session',
@@ -4981,6 +5525,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical Discharge Consultation',
@@ -4989,6 +5534,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical Follow-up Consultation',
@@ -4997,6 +5543,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Mind-Body Discharge Consultation',
@@ -5005,6 +5552,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Mind-Body Follow-up Consultation',
@@ -5013,6 +5561,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Nutrition Discharge Consultation',
@@ -5021,6 +5570,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Nutrition Follow-up Consultation',
@@ -5029,6 +5579,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Psychology Follow-up Consultation',
@@ -5037,6 +5588,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Quiet Room 60 min',
@@ -5045,6 +5597,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [6],
             },
             {
                 "nombre":        'Sauna Session 60 min',
@@ -5053,6 +5606,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": [],
                 "recurso_fis":   'Sauna',
+                "cantidad_por_semana": [6],
             },
             {
                 "nombre":        'Medical SPA Session 30 min',
@@ -5061,6 +5615,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Medical SPA Session 60 min',
@@ -5069,6 +5624,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [4],
             },
             {
                 "nombre":        'Medical SPA Session 90 min',
@@ -5077,6 +5633,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'IV: Chelation',
@@ -5085,6 +5642,7 @@ programas = {
                 "duracion_min":  45,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'IV: Glutathione',
@@ -5093,6 +5651,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [2],
             },
         ],
     },
@@ -5109,6 +5668,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Ozone Machine',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Chiropractic Follow-up Consultation',
@@ -5117,6 +5677,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Chiropractic Discharge Consultation',
@@ -5125,6 +5686,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Colon Hydrotherapy',
@@ -5133,6 +5695,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Colonic Technician'],
                 "recurso_fis":   'Colon Hydrotherapy Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Dental Cleaning',
@@ -5141,6 +5704,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Dental Hygienist'],
                 "recurso_fis":   'Dental Treatment Unit',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Fitness Discharge Consultation',
@@ -5149,6 +5713,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Individual Fitness Session',
@@ -5157,6 +5722,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Hyperbaric Oxygen',
@@ -5165,6 +5731,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Hyperbaric Technician / Nurse'],
                 "recurso_fis":   'Hyperbaric Chamber',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Full Body Hyperthermia with Sedation',
@@ -5173,6 +5740,7 @@ programas = {
                 "duracion_min":  258,
                 "recursos_prof": ['Nurse - Hyperthermia'],
                 "recurso_fis":   'Full Body Hyperthermia Chamber',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical Discharge Consultation',
@@ -5181,6 +5749,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical Follow-up Consultation',
@@ -5189,6 +5758,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [3],
             },
             {
                 "nombre":        'Mind-Body Discharge Consultation',
@@ -5197,6 +5767,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Mind-Body Follow-up Consultation',
@@ -5205,6 +5776,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Nutrition Discharge Consultation',
@@ -5213,6 +5785,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Nutrition Follow-up Consultation',
@@ -5221,6 +5794,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Psychology Follow-up Consultation',
@@ -5229,6 +5803,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Quiet Room 60 min',
@@ -5237,6 +5812,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [3],
             },
             {
                 "nombre":        'Medical SPA Session 60 min',
@@ -5245,6 +5821,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [3],
             },
             {
                 "nombre":        'IV: Alpha Lipoic Acid',
@@ -5253,6 +5830,7 @@ programas = {
                 "duracion_min":  40,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'IV: Artesunate Hyp Ext',
@@ -5261,6 +5839,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'IV: Cellular Nutrition',
@@ -5269,6 +5848,7 @@ programas = {
                 "duracion_min":  120,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'IV: Chelation',
@@ -5277,6 +5857,7 @@ programas = {
                 "duracion_min":  45,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'IV: Electrolyte Solution',
@@ -5285,6 +5866,7 @@ programas = {
                 "duracion_min":  180,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'IV: Glutathione',
@@ -5293,6 +5875,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [3],
             },
             {
                 "nombre":        'IV: Superimmune',
@@ -5301,6 +5884,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [2],
             },
         ],
     },
@@ -5317,6 +5901,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Ozone Machine',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Chiropractic Follow-up Consultation',
@@ -5325,6 +5910,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Chiropractic Discharge Consultation',
@@ -5333,6 +5919,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Colon Hydrotherapy',
@@ -5341,6 +5928,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Colonic Technician'],
                 "recurso_fis":   'Colon Hydrotherapy Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Dental Cleaning',
@@ -5349,6 +5937,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Dental Hygienist'],
                 "recurso_fis":   'Dental Treatment Unit',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Fitness Discharge Consultation',
@@ -5357,6 +5946,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Individual Fitness Session',
@@ -5365,6 +5955,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Hyperbaric Oxygen',
@@ -5373,6 +5964,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Hyperbaric Technician / Nurse'],
                 "recurso_fis":   'Hyperbaric Chamber',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Full Body Hyperthermia with Sedation',
@@ -5381,6 +5973,7 @@ programas = {
                 "duracion_min":  258,
                 "recursos_prof": ['Nurse - Hyperthermia'],
                 "recurso_fis":   'Full Body Hyperthermia Chamber',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical Discharge Consultation',
@@ -5389,6 +5982,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical Follow-up Consultation',
@@ -5397,6 +5991,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [3],
             },
             {
                 "nombre":        'Mind-Body Discharge Consultation',
@@ -5405,6 +6000,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Mind-Body Follow-up Consultation',
@@ -5413,6 +6009,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Nutrition Discharge Consultation',
@@ -5421,6 +6018,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Nutrition Follow-up Consultation',
@@ -5429,6 +6027,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Psychology Follow-up Consultation',
@@ -5437,6 +6036,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Quiet Room 60 min',
@@ -5445,6 +6045,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [3],
             },
             {
                 "nombre":        'Medical SPA Session 60 min',
@@ -5453,6 +6054,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [3],
             },
             {
                 "nombre":        'Subclavian Catheter Placement',
@@ -5461,6 +6063,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Oncologist (and Surgeon)', 'Nurse - Operating Room'],
                 "recurso_fis":   'Operating Room',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'IV: Alpha Lipoic Acid',
@@ -5469,6 +6072,7 @@ programas = {
                 "duracion_min":  40,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'IV: Cellular Nutrition',
@@ -5477,6 +6081,7 @@ programas = {
                 "duracion_min":  120,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'IV: Chelation',
@@ -5485,6 +6090,7 @@ programas = {
                 "duracion_min":  45,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'IV: Electrolyte Solution',
@@ -5493,6 +6099,7 @@ programas = {
                 "duracion_min":  180,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'IV: Glutathione',
@@ -5501,6 +6108,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [6],
             },
             {
                 "nombre":        'IV: Superimmune',
@@ -5509,6 +6117,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [2],
             },
         ],
     },
@@ -5525,6 +6134,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Chiropractic Discharge Consultation',
@@ -5533,6 +6143,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Colon Hydrotherapy',
@@ -5541,6 +6152,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Colonic Technician'],
                 "recurso_fis":   'Colon Hydrotherapy Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Dental Cleaning',
@@ -5549,6 +6161,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Dental Hygienist'],
                 "recurso_fis":   'Dental Treatment Unit',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Fitness Discharge Consultation',
@@ -5557,6 +6170,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Individual Fitness Session',
@@ -5565,6 +6179,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Hyperbaric Oxygen',
@@ -5573,6 +6188,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Hyperbaric Technician / Nurse'],
                 "recurso_fis":   'Hyperbaric Chamber',
+                "cantidad_por_semana": [5],
             },
             {
                 "nombre":        'Medical Discharge Consultation',
@@ -5581,6 +6197,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical Follow-up Consultation',
@@ -5589,6 +6206,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [4],
             },
             {
                 "nombre":        'Mind-Body Discharge Consultation',
@@ -5597,6 +6215,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Mind-Body Follow-up Consultation',
@@ -5605,6 +6224,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Minor Ozone Autohemotherapy',
@@ -5613,6 +6233,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Ozone Machine',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Nutrition Discharge Consultation',
@@ -5621,6 +6242,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Nutrition Follow-up Consultation',
@@ -5629,6 +6251,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Psychology Follow-up Consultation',
@@ -5637,6 +6260,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Quiet Room 30 min',
@@ -5645,6 +6269,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [3],
             },
             {
                 "nombre":        'Quiet Room 60 min',
@@ -5653,6 +6278,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Medical SPA Session 60 min',
@@ -5661,6 +6287,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [3],
             },
             {
                 "nombre":        'Medical SPA Session 90 min',
@@ -5669,6 +6296,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Full Body Hyperthermia',
@@ -5677,6 +6305,7 @@ programas = {
                 "duracion_min":  120,
                 "recursos_prof": ['Nurse - Hyperthermia'],
                 "recurso_fis":   'Full Body Hyperthermia Chamber',
+                "cantidad_por_semana": [1],
             },
         ],
     },
@@ -5693,6 +6322,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [3],
             },
             {
                 "nombre":        'Chiropractic Discharge Consultation',
@@ -5701,6 +6331,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Colon Hydrotherapy',
@@ -5709,6 +6340,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Colonic Technician'],
                 "recurso_fis":   'Colon Hydrotherapy Office',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Dental Cleaning',
@@ -5717,6 +6349,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Dental Hygienist'],
                 "recurso_fis":   'Dental Treatment Unit',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Fitness Discharge Consultation',
@@ -5725,6 +6358,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Individual Fitness Session',
@@ -5733,6 +6367,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Hyperbaric Oxygen',
@@ -5741,6 +6376,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Hyperbaric Technician / Nurse'],
                 "recurso_fis":   'Hyperbaric Chamber',
+                "cantidad_por_semana": [5],
             },
             {
                 "nombre":        'Ozone Autohemotherapy (60 min)',
@@ -5749,6 +6385,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Ozone Machine',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical Discharge Consultation',
@@ -5757,6 +6394,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical Follow-up Consultation',
@@ -5765,6 +6403,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [4],
             },
             {
                 "nombre":        'Mind-Body Follow-up Consultation',
@@ -5773,6 +6412,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Nutrition Discharge Consultation',
@@ -5781,6 +6421,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Nutrition Follow-up Consultation',
@@ -5789,6 +6430,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Psychology Follow-up Consultation',
@@ -5797,6 +6439,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Quiet Room 60 min',
@@ -5805,6 +6448,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [3],
             },
             {
                 "nombre":        'Sauna Session 60 min',
@@ -5813,6 +6457,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": [],
                 "recurso_fis":   'Sauna',
+                "cantidad_por_semana": [6],
             },
             {
                 "nombre":        'Medical SPA Session 60 min',
@@ -5821,6 +6466,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Medical SPA Session 90 min',
@@ -5829,6 +6475,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'IV: Alpha Lipoic Acid',
@@ -5837,6 +6484,7 @@ programas = {
                 "duracion_min":  40,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [3],
             },
             {
                 "nombre":        'IV: Glutathione',
@@ -5845,6 +6493,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [3],
             },
             {
                 "nombre":        'IV: Mitochondrial Energy',
@@ -5853,6 +6502,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [3],
             },
         ],
     },
@@ -5869,6 +6519,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Chiropractic Discharge Consultation',
@@ -5877,6 +6528,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Colon Hydrotherapy',
@@ -5885,6 +6537,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Colonic Technician'],
                 "recurso_fis":   'Colon Hydrotherapy Office',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Dental Cleaning',
@@ -5893,6 +6546,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Dental Hygienist'],
                 "recurso_fis":   'Dental Treatment Unit',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Fitness Discharge Consultation',
@@ -5901,6 +6555,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Individual Fitness Session',
@@ -5909,6 +6564,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Hyperbaric Oxygen',
@@ -5917,6 +6573,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Hyperbaric Technician / Nurse'],
                 "recurso_fis":   'Hyperbaric Chamber',
+                "cantidad_por_semana": [3],
             },
             {
                 "nombre":        'Medical Discharge Consultation',
@@ -5925,6 +6582,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical Follow-up Consultation',
@@ -5933,6 +6591,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Mind-Body Discharge Consultation',
@@ -5941,6 +6600,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Mind-Body Follow-up Consultation',
@@ -5949,6 +6609,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Nutrition Discharge Consultation',
@@ -5957,6 +6618,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Nutrition Follow-up Consultation',
@@ -5965,6 +6627,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Psychology Follow-up Consultation',
@@ -5973,6 +6636,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Quiet Room 60 min',
@@ -5981,6 +6645,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [3],
             },
             {
                 "nombre":        'Sauna Session 60 min',
@@ -5989,6 +6654,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": [],
                 "recurso_fis":   'Sauna',
+                "cantidad_por_semana": [7],
             },
             {
                 "nombre":        'Medical SPA Session 60 min',
@@ -5997,6 +6663,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [4],
             },
             {
                 "nombre":        'Medical SPA Session 90 min',
@@ -6005,6 +6672,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'IV: Mitochondrial Energy',
@@ -6013,6 +6681,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [1],
             },
         ],
     },
@@ -6029,6 +6698,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   'Nutrition Office',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Chiropractic Discharge Consultation',
@@ -6037,6 +6707,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Colon Hydrotherapy',
@@ -6045,6 +6716,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Colonic Technician'],
                 "recurso_fis":   'Colon Hydrotherapy Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Electrocardiogram (EKG)',
@@ -6053,6 +6725,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Nursing Bed - Hyperthermia Recovery',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Individual Fitness Session',
@@ -6061,6 +6734,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [3],
             },
             {
                 "nombre":        'Hyperbaric Oxygen',
@@ -6069,6 +6743,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Hyperbaric Technician / Nurse'],
                 "recurso_fis":   'Hyperbaric Chamber',
+                "cantidad_por_semana": [5],
             },
             {
                 "nombre":        'Initial Medical Consultation',
@@ -6077,6 +6752,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Max Pulse',
@@ -6085,6 +6761,7 @@ programas = {
                 "duracion_min":  15,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical Discharge Consultation',
@@ -6093,6 +6770,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical Follow-up Consultation',
@@ -6101,6 +6779,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [4],
             },
             {
                 "nombre":        'Mind-Body Discharge Consultation',
@@ -6109,6 +6788,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Mind-Body Follow-up Consultation',
@@ -6117,6 +6797,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Neural Therapy',
@@ -6125,6 +6806,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Dentist', 'Dental Assistant'],
                 "recurso_fis":   'Dental Treatment Unit',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Assisted Neurofeedback (30 min)',
@@ -6133,6 +6815,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Neurofeedback Therapist'],
                 "recurso_fis":   'Neurofeedback Module',
+                "cantidad_por_semana": [10],
             },
             {
                 "nombre":        'Nutrition Discharge Consultation',
@@ -6141,6 +6824,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Nutrition Follow-up Consultation',
@@ -6149,6 +6833,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Psychology Follow-up Consultation',
@@ -6157,6 +6842,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Quiet Room 60 min',
@@ -6165,6 +6851,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [3],
             },
             {
                 "nombre":        'Medical SPA Session 60 min',
@@ -6173,6 +6860,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [3],
             },
             {
                 "nombre":        'Medical SPA Session 90 min',
@@ -6181,6 +6869,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Full Body Hyperthermia',
@@ -6189,6 +6878,7 @@ programas = {
                 "duracion_min":  120,
                 "recursos_prof": ['Nurse - Hyperthermia'],
                 "recurso_fis":   'Full Body Hyperthermia Chamber',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'IV: Carboxylase',
@@ -6197,6 +6887,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'IV: Cellular Nutrition',
@@ -6205,6 +6896,7 @@ programas = {
                 "duracion_min":  120,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'IV: Methylene Blue',
@@ -6213,6 +6905,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Protocol PC 1, 2, 3',
@@ -6221,6 +6914,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [15],
             },
         ],
     },
@@ -6237,6 +6931,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical Follow-up Consultation',
@@ -6245,6 +6940,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Assisted Neurofeedback (30 min)',
@@ -6253,6 +6949,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Neurofeedback Therapist'],
                 "recurso_fis":   'Neurofeedback Module',
+                "cantidad_por_semana": [5],
             },
             {
                 "nombre":        'Quiet Room 60 min',
@@ -6261,6 +6958,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [3],
             },
             {
                 "nombre":        'Remote Neurofeedback',
@@ -6269,6 +6967,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Neurofeedback Therapist'],
                 "recurso_fis":   'Neurofeedback Module',
+                "cantidad_por_semana": [10],
             },
             {
                 "nombre":        'Medical SPA Session 60 min',
@@ -6277,6 +6976,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [2],
             },
         ],
     },
@@ -6293,6 +6993,7 @@ programas = {
                 "duracion_min":  25,
                 "recursos_prof": ['QR Therapist'],
                 "recurso_fis":   'Quiet Room Bed',
+                "cantidad_por_semana": [3],
             },
             {
                 "nombre":        'Chiropractic Follow-up Consultation',
@@ -6301,6 +7002,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Chiropractic Discharge Consultation',
@@ -6309,6 +7011,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Chiropractor'],
                 "recurso_fis":   'Chiropractic Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Colon Hydrotherapy',
@@ -6317,6 +7020,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Colonic Technician'],
                 "recurso_fis":   'Colon Hydrotherapy Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Dental Cleaning',
@@ -6325,6 +7029,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Dental Hygienist'],
                 "recurso_fis":   'Dental Treatment Unit',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Fitness Discharge Consultation',
@@ -6333,6 +7038,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Individual Fitness Session',
@@ -6341,6 +7047,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Fitness Instructor'],
                 "recurso_fis":   'Fitness Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Hyperbaric Oxygen',
@@ -6349,6 +7056,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Hyperbaric Technician / Nurse'],
                 "recurso_fis":   'Hyperbaric Chamber',
+                "cantidad_por_semana": [5],
             },
             {
                 "nombre":        'Medical Discharge Consultation',
@@ -6357,6 +7065,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical Follow-up Consultation',
@@ -6365,6 +7074,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Treating Doctor'],
                 "recurso_fis":   'Doctor Office',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Mind-Body Discharge Consultation',
@@ -6373,6 +7083,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Mind and Body Therapist'],
                 "recurso_fis":   'MBT Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Nutrition Discharge Consultation',
@@ -6381,6 +7092,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Nutritionist'],
                 "recurso_fis":   None,
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Psychology Follow-up Consultation',
@@ -6389,6 +7101,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Psychologist'],
                 "recurso_fis":   'Psychology Office',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical SPA Session 30 min',
@@ -6397,6 +7110,7 @@ programas = {
                 "duracion_min":  30,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'Medical SPA Session 60 min',
@@ -6405,6 +7119,7 @@ programas = {
                 "duracion_min":  60,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'Medical SPA Session 90 min',
@@ -6413,6 +7128,7 @@ programas = {
                 "duracion_min":  90,
                 "recursos_prof": ['Physical Therapist SPA'],
                 "recurso_fis":   'SPA Massage Room',
+                "cantidad_por_semana": [1],
             },
             {
                 "nombre":        'IV: Cellular Nutrition',
@@ -6421,6 +7137,7 @@ programas = {
                 "duracion_min":  120,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'IV: Glutathione',
@@ -6429,6 +7146,7 @@ programas = {
                 "duracion_min":  10,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [2],
             },
             {
                 "nombre":        'IV: Electrolyte Solution',
@@ -6437,6 +7155,7 @@ programas = {
                 "duracion_min":  180,
                 "recursos_prof": ['General Nurse'],
                 "recurso_fis":   'Recliner (infusion centers)',
+                "cantidad_por_semana": [1],
             },
         ],
     },
@@ -6859,3 +7578,28 @@ duraciones_dias   = {k: v["duracion_dias"] for k, v in programas.items()}
 prioridades       = {k: v["prioridad"]     for k, v in programas.items()}
 
 catalogo_por_nombre = {a["nombre"]: a for a in catalogo_actividades}
+
+
+# ── Validación de cantidad_por_semana ────────────────────────────────────────
+
+def validar_cantidades_por_semana():
+    """Valida que cantidad_por_semana sea consistente con cantidad y duracion_dias."""
+    errores = []
+    for nombre, prog in programas.items():
+        n_semanas_esperadas = max(prog["duracion_dias"] // 7, 1)
+        for act in prog["actividades"]:
+            cps = act.get("cantidad_por_semana", [act["cantidad"]])
+            if sum(cps) != act["cantidad"]:
+                errores.append(
+                    f"{nombre} / {act['nombre']}: suma {sum(cps)} ≠ cantidad {act['cantidad']}"
+                )
+            if len(cps) != n_semanas_esperadas:
+                errores.append(
+                    f"{nombre} / {act['nombre']}: len {len(cps)} ≠ semanas esperadas {n_semanas_esperadas}"
+                )
+    if errores:
+        raise ValueError("Errores en cantidad_por_semana:\n" + "\n".join(errores))
+    return True
+
+
+validar_cantidades_por_semana()

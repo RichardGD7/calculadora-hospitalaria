@@ -9,7 +9,7 @@ import os
 import copy
 import importlib
 import numpy as np
-from optimizador_v2 import obtener_datos_base, ejecutar_optimizacion, verificar_admision
+from optimizador_v2 import obtener_datos_base, ejecutar_optimizacion, verificar_admision, verificar_admision_semana
 import BD_sanoviv as datos
 
 
@@ -581,6 +581,11 @@ if "resultados" not in st.session_state:
 if "resultado_verificacion" not in st.session_state:
     st.session_state.resultado_verificacion = None
 
+if "semana_pacientes" not in st.session_state:
+    st.session_state.semana_pacientes = {
+        i: 1 for i in range(len(datos_base["nombre_programas"]))
+    }
+
 if "admin_mode" not in st.session_state:
     st.session_state.admin_mode = False
 
@@ -973,6 +978,30 @@ with tab2:
     except Exception:
         st.warning("Some values could not be processed. Please enter valid numbers (0-100).")
 
+    # ── Week selectors for multi-week programs ────────────────────────────────
+    _multi_week_base = [
+        (i, _nombres[i], max(datos_base["duraciones_dias"][_nombres[i]] // 7, 1))
+        for i in indices_base
+        if max(datos_base["duraciones_dias"][_nombres[i]] // 7, 1) > 1
+    ]
+    if _multi_week_base:
+        st.markdown("##### Week of Stay (multi-week programs)")
+        st.caption("Select the week each group of patients is currently in.")
+        _cols_per_row = 3
+        for row_start in range(0, len(_multi_week_base), _cols_per_row):
+            row_items = _multi_week_base[row_start:row_start + _cols_per_row]
+            cols = st.columns(_cols_per_row)
+            for col_idx, (global_idx, nombre, n_semanas) in enumerate(row_items):
+                with cols[col_idx]:
+                    current_week = st.session_state.semana_pacientes.get(global_idx, 1)
+                    new_week = st.selectbox(
+                        nombre,
+                        options=list(range(1, n_semanas + 1)),
+                        index=min(current_week - 1, n_semanas - 1),
+                        key=f"week_base_{global_idx}",
+                    )
+                    st.session_state.semana_pacientes[global_idx] = new_week
+
     st.markdown("<br>", unsafe_allow_html=True)
 
     # ── Sección: Extensiones ─────────────────────────────────────────────────
@@ -1050,6 +1079,7 @@ with tab2:
     # Acción de limpiar pacientes
     if limpiar:
         st.session_state.pacientes_actuales = [0] * len(datos_base["nombre_programas"])
+        st.session_state.semana_pacientes = {i: 1 for i in range(len(datos_base["nombre_programas"]))}
         st.session_state.resultados = None
         st.rerun()
 
@@ -1117,6 +1147,7 @@ with tab2:
 
         df_resultado = pd.DataFrame({
             "Program": resultados["nombre_programas"],
+            "Week": [st.session_state.semana_pacientes.get(i, 1) for i in range(len(resultados["nombre_programas"]))],
             "Current": st.session_state.pacientes_actuales,
             "Additional": resultados["pacientes_adicionales"],
             "Total": [a + b for a, b in zip(st.session_state.pacientes_actuales, resultados["pacientes_adicionales"])],
@@ -1126,6 +1157,7 @@ with tab2:
             df_resultado,
             column_config={
                 "Program": st.column_config.TextColumn("Program", width="large"),
+                "Week": st.column_config.NumberColumn("Week", format="%d"),
                 "Current": st.column_config.NumberColumn("Current", format="%d"),
                 "Additional": st.column_config.NumberColumn("Additional", format="%d"),
                 "Total": st.column_config.NumberColumn("Projected Total", format="%d"),
@@ -1259,7 +1291,7 @@ with tab4:
     st.markdown("#### Admission Requests")
 
     # Crear columnas para el formulario
-    col_form1, col_form2 = st.columns([2, 1])
+    col_form1, col_form2, col_form3 = st.columns([2, 1, 1])
 
     with col_form1:
         # Selector de programa (agrupado: base programs primero, luego extensions con prefijo)
@@ -1290,6 +1322,20 @@ with tab4:
             key="cantidad_verificar",
         )
 
+    with col_form3:
+        # Selector de semana (dinámico según programa seleccionado)
+        _nombre_sel = datos_base["nombre_programas"][programa_seleccionado]
+        _n_semanas_sel = max(datos_base["duraciones_dias"][_nombre_sel] // 7, 1)
+        if _n_semanas_sel > 1:
+            semana_solicitud = st.selectbox(
+                "Week:",
+                options=list(range(1, _n_semanas_sel + 1)),
+                key="semana_verificar",
+            )
+        else:
+            st.text_input("Week:", value="1", disabled=True, key="semana_verificar_disabled")
+            semana_solicitud = 1
+
     # Inicializar lista de solicitudes en session state
     if "solicitudes_admision" not in st.session_state:
         st.session_state.solicitudes_admision = {}
@@ -1302,7 +1348,11 @@ with tab4:
             # Validar cantidad antes de agregar
             cantidad_validada = safe_int(cantidad_pacientes, default=1, min_val=1, max_val=50)
             programa_validado = safe_int(programa_seleccionado, default=0, min_val=0, max_val=len(datos_base["nombre_programas"])-1)
-            st.session_state.solicitudes_admision[programa_validado] = cantidad_validada
+            semana_validada = safe_int(semana_solicitud, default=1, min_val=1, max_val=3)
+            st.session_state.solicitudes_admision[programa_validado] = {
+                "cantidad": cantidad_validada,
+                "semana": semana_validada,
+            }
             st.rerun()
 
     with col_btn2:
@@ -1319,22 +1369,24 @@ with tab4:
         solicitudes_df = pd.DataFrame([
             {
                 "Program": datos_base["nombre_programas"][idx],
-                "Requested Patients": cant,
+                "Week": sol["semana"],
+                "Requested Patients": sol["cantidad"],
             }
-            for idx, cant in st.session_state.solicitudes_admision.items()
+            for idx, sol in st.session_state.solicitudes_admision.items()
         ])
 
         st.dataframe(
             solicitudes_df,
             column_config={
                 "Program": st.column_config.TextColumn("Program", width="large"),
+                "Week": st.column_config.NumberColumn("Week", format="%d"),
                 "Requested Patients": st.column_config.NumberColumn("Patients", format="%d"),
             },
             hide_index=True,
             use_container_width=True,
         )
 
-        total_solicitados = sum(st.session_state.solicitudes_admision.values())
+        total_solicitados = sum(sol["cantidad"] for sol in st.session_state.solicitudes_admision.values())
         st.markdown(f"**Total requested patients:** {total_solicitados}")
 
         st.markdown("<br>", unsafe_allow_html=True)
@@ -1351,9 +1403,26 @@ with tab4:
         if verificar_btn:
             with st.spinner("Verifying feasibility..."):
                 try:
-                    resultado_verificacion = verificar_admision(
-                        st.session_state.pacientes_actuales,
-                        st.session_state.solicitudes_admision,
+                    # Construir pacientes_por_semana desde session_state
+                    pacientes_por_semana = {}
+                    for idx_prog, n_pac in enumerate(st.session_state.pacientes_actuales):
+                        if n_pac > 0:
+                            semana = st.session_state.semana_pacientes.get(idx_prog, 1)
+                            if semana not in pacientes_por_semana:
+                                pacientes_por_semana[semana] = [0] * len(st.session_state.pacientes_actuales)
+                            pacientes_por_semana[semana][idx_prog] = n_pac
+
+                    # Construir solicitudes_semana desde solicitudes_admision
+                    solicitudes_semana = {}
+                    for idx_prog, sol in st.session_state.solicitudes_admision.items():
+                        semana = sol["semana"]
+                        if semana not in solicitudes_semana:
+                            solicitudes_semana[semana] = {}
+                        solicitudes_semana[semana][idx_prog] = sol["cantidad"]
+
+                    resultado_verificacion = verificar_admision_semana(
+                        pacientes_por_semana,
+                        solicitudes_semana,
                     )
                     st.session_state.resultado_verificacion = resultado_verificacion
                     st.rerun()
@@ -1399,12 +1468,14 @@ with tab4:
 
         for detalle in resultado["solicitudes_detalle"]:
             pacientes_actuales_programa = st.session_state.pacientes_actuales[detalle["programa_idx"]]
+            semana_detalle = detalle.get("semana", "")
+            week_label = f" (Week {semana_detalle})" if semana_detalle else ""
             if detalle["factible"]:
                 st.markdown(f"""
                 <div style="background: linear-gradient(135deg, #D1FAE5 0%, #ECFDF5 100%); border: 1px solid #10B981; border-radius: 10px; padding: 1rem; margin: 0.5rem 0; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.1);">
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 0.5rem;">
                         <span style="font-size: 1.2rem;">✅</span>
-                        <strong style="color: #065F46;">{detalle['programa']}</strong>
+                        <strong style="color: #065F46;">{detalle['programa']}{week_label}</strong>
                     </div>
                     <div style="color: #047857; font-size: 0.9rem;">
                         Current: <strong>{pacientes_actuales_programa}</strong> | Requested: <strong>{detalle['cantidad_solicitada']}</strong> | Maximum admissible: <strong>{detalle['max_admisible']}</strong>
@@ -1416,7 +1487,7 @@ with tab4:
                 <div style="background: linear-gradient(135deg, #FEE2E2 0%, #FEF2F2 100%); border: 1px solid #EF4444; border-radius: 10px; padding: 1rem; margin: 0.5rem 0; box-shadow: 0 2px 4px rgba(239, 68, 68, 0.1);">
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 0.5rem;">
                         <span style="font-size: 1.2rem;">❌</span>
-                        <strong style="color: #7F1D1D;">{detalle['programa']}</strong>
+                        <strong style="color: #7F1D1D;">{detalle['programa']}{week_label}</strong>
                     </div>
                     <div style="color: #991B1B; font-size: 0.9rem;">
                         Current: <strong>{pacientes_actuales_programa}</strong> | Requested: <strong>{detalle['cantidad_solicitada']}</strong> | Maximum admissible: <strong>{detalle['max_admisible']}</strong> | Deficit: <strong>{detalle['deficit']}</strong>
@@ -1753,182 +1824,256 @@ if st.session_state.admin_mode:
         with subtab_programas:
             st.markdown("#### Programs")
 
-            # ── Crear nuevo programa ──
-            st.markdown("##### Create New Program / Extension")
-            with st.form("form_new_program", clear_on_submit=True):
-                new_prog_name = st.text_input("Program Name")
-                col_pt, col_pb = st.columns(2)
-                with col_pt:
-                    new_prog_tipo = st.selectbox("Type", options=["programa", "extension"], key="new_prog_tipo")
-                with col_pb:
-                    _existing_bases = [k for k, v in st.session_state.admin_programas.items() if v.get("tipo") == "programa"]
-                    new_prog_base = st.selectbox(
-                        "Base Program (for extensions)",
-                        options=["(N/A)"] + _existing_bases,
-                        key="new_prog_base",
-                    )
-                col_pd, col_pp = st.columns(2)
-                with col_pd:
-                    new_prog_dur = st.number_input("Duration (days)", min_value=1, max_value=90, value=7, step=1, key="new_prog_dur")
-                with col_pp:
-                    new_prog_pri = st.number_input("Priority", min_value=1, max_value=100, value=5, step=1, key="new_prog_pri")
-                submitted_prog = st.form_submit_button("Create Program")
+            subtab_edit_prog, subtab_new_prog = st.tabs([
+                "Edit Existing Program", "Create New Program"
+            ])
 
-                if submitted_prog:
-                    prog_name_clean = safe_string(new_prog_name, default="").strip()
-                    if not prog_name_clean:
-                        st.error("Program name cannot be empty.")
-                    elif prog_name_clean in st.session_state.admin_programas:
-                        st.error(f"Program '{prog_name_clean}' already exists.")
-                    elif new_prog_tipo == "extension" and new_prog_base == "(N/A)":
-                        st.error("Extensions must specify a base program.")
+            # ─── SUB-TAB: CREATE NEW PROGRAM ─────────────────
+            with subtab_new_prog:
+                st.markdown("##### New Program / Extension")
+                with st.form("form_new_program", clear_on_submit=True):
+                    new_prog_name = st.text_input("Program Name")
+                    col_pt, col_pb = st.columns(2)
+                    with col_pt:
+                        new_prog_tipo = st.selectbox("Type", options=["programa", "extension"], key="new_prog_tipo")
+                    with col_pb:
+                        _existing_bases = [k for k, v in st.session_state.admin_programas.items() if v.get("tipo") == "programa"]
+                        new_prog_base = st.selectbox(
+                            "Base Program (for extensions)",
+                            options=["(N/A)"] + _existing_bases,
+                            key="new_prog_base",
+                        )
+                    col_pd, col_pp = st.columns(2)
+                    with col_pd:
+                        new_prog_dur = st.number_input("Duration (days)", min_value=1, max_value=90, value=7, step=1, key="new_prog_dur")
+                    with col_pp:
+                        new_prog_pri = st.number_input("Priority", min_value=1, max_value=100, value=5, step=1, key="new_prog_pri")
+                    submitted_prog = st.form_submit_button("Create Program")
+
+                    if submitted_prog:
+                        prog_name_clean = safe_string(new_prog_name, default="").strip()
+                        if not prog_name_clean:
+                            st.error("Program name cannot be empty.")
+                        elif prog_name_clean in st.session_state.admin_programas:
+                            st.error(f"Program '{prog_name_clean}' already exists.")
+                        elif new_prog_tipo == "extension" and new_prog_base == "(N/A)":
+                            st.error("Extensions must specify a base program.")
+                        else:
+                            new_prog_data = {
+                                "duracion_dias": safe_int(new_prog_dur, default=7, min_val=1),
+                                "prioridad": safe_int(new_prog_pri, default=5, min_val=1),
+                                "tipo": new_prog_tipo,
+                                "actividades": [],
+                            }
+                            if new_prog_tipo == "extension":
+                                new_prog_data["programa_base"] = new_prog_base
+                            st.session_state.admin_programas[prog_name_clean] = new_prog_data
+                            st.success(f"Program '{prog_name_clean}' created. Go to 'Edit Existing Program' to add activities.")
+                            st.rerun()
+
+            # ─── SUB-TAB: EDIT EXISTING PROGRAM ──────────────
+            with subtab_edit_prog:
+                # ── Selector de programa ──
+                programa_nombres = list(st.session_state.admin_programas.keys())
+                _admin_base = [n for n in programa_nombres if st.session_state.admin_programas[n].get("tipo") == "programa"]
+                _admin_ext = [n for n in programa_nombres if st.session_state.admin_programas[n].get("tipo") != "programa"]
+                _admin_opciones = _admin_base + _admin_ext
+
+                def _fmt_admin_programa(name):
+                    prog = st.session_state.admin_programas[name]
+                    if prog.get("tipo") == "extension":
+                        return f"  ↳ {name}  ({prog.get('programa_base', '')})"
+                    return name
+
+                programa_seleccionado = st.selectbox(
+                    "Select Program:",
+                    options=_admin_opciones,
+                    format_func=_fmt_admin_programa,
+                    key="admin_programa_selector",
+                )
+
+                if programa_seleccionado:
+                    prog_data = st.session_state.admin_programas[programa_seleccionado]
+
+                    # ── Metadatos editables ──
+                    col_dur, col_pri = st.columns(2)
+                    with col_dur:
+                        nueva_duracion = st.number_input(
+                            "Duration (days)", min_value=1, max_value=90,
+                            value=prog_data["duracion_dias"], step=1,
+                            key=f"duracion_{programa_seleccionado}",
+                        )
+                        st.session_state.admin_programas[programa_seleccionado]["duracion_dias"] = nueva_duracion
+                    with col_pri:
+                        nueva_prioridad = st.number_input(
+                            "Priority", min_value=1, max_value=100,
+                            value=prog_data.get("prioridad", 5), step=1,
+                            key=f"prioridad_{programa_seleccionado}",
+                        )
+                        st.session_state.admin_programas[programa_seleccionado]["prioridad"] = nueva_prioridad
+
+                    st.markdown("<br>", unsafe_allow_html=True)
+
+                    # ── Tabla de actividades del programa ──
+                    st.markdown(f"**Activities for {programa_seleccionado}**")
+                    _n_semanas_prog = max(prog_data["duracion_dias"] // 7, 1)
+                    _is_multi_week = _n_semanas_prog > 1
+
+                    if _is_multi_week:
+                        st.caption("Quantity and weekly distribution (W1, W2...) are editable. The sum of weeks must equal Quantity.")
                     else:
-                        new_prog_data = {
-                            "duracion_dias": safe_int(new_prog_dur, default=7, min_val=1),
-                            "prioridad": safe_int(new_prog_pri, default=5, min_val=1),
-                            "tipo": new_prog_tipo,
-                            "actividades": [],
-                        }
-                        if new_prog_tipo == "extension":
-                            new_prog_data["programa_base"] = new_prog_base
-                        st.session_state.admin_programas[prog_name_clean] = new_prog_data
-                        st.success(f"Program '{prog_name_clean}' created. Add activities below.")
-                        st.rerun()
+                        st.caption("Only Quantity is editable. Type, duration, and resources are inherited from the catalog.")
 
-            st.markdown("<br>", unsafe_allow_html=True)
+                    cat_lookup_now = {a["nombre"]: a for a in st.session_state.admin_catalogo}
 
-            # ── Selector de programa ──
-            programa_nombres = list(st.session_state.admin_programas.keys())
-            _admin_base = [n for n in programa_nombres if st.session_state.admin_programas[n].get("tipo") == "programa"]
-            _admin_ext = [n for n in programa_nombres if st.session_state.admin_programas[n].get("tipo") != "programa"]
-            _admin_opciones = _admin_base + _admin_ext
+                    # ── Pre-render sync: process pending edits before rebuilding DataFrame ──
+                    _editor_act_key = f"editor_actividades_{programa_seleccionado}"
+                    if _editor_act_key in st.session_state:
+                        _ed_data = st.session_state[_editor_act_key]
+                        if "edited_rows" in _ed_data and _ed_data["edited_rows"]:
+                            for _row_idx_str, _changes in _ed_data["edited_rows"].items():
+                                _row_idx = int(_row_idx_str)
+                                if _row_idx < len(prog_data["actividades"]):
+                                    _act_ref = prog_data["actividades"][_row_idx]
+                                    if "Quantity" in _changes:
+                                        _act_ref["cantidad"] = safe_int(_changes["Quantity"], default=1, min_val=0)
+                                    if _is_multi_week:
+                                        _new_cps = list(_act_ref.get("cantidad_por_semana", [_act_ref["cantidad"]] + [0] * (_n_semanas_prog - 1)))
+                                        while len(_new_cps) < _n_semanas_prog:
+                                            _new_cps.append(0)
+                                        for _w in range(1, _n_semanas_prog + 1):
+                                            if f"W{_w}" in _changes:
+                                                _new_cps[_w - 1] = safe_int(_changes[f"W{_w}"], default=0, min_val=0)
+                                        _act_ref["cantidad_por_semana"] = _new_cps
+                                    else:
+                                        _act_ref["cantidad_por_semana"] = [_act_ref["cantidad"]]
+                        # Clear editor state to prevent stale diffs from interfering
+                        del st.session_state[_editor_act_key]
 
-            def _fmt_admin_programa(name):
-                prog = st.session_state.admin_programas[name]
-                if prog.get("tipo") == "extension":
-                    return f"  ↳ {name}  ({prog.get('programa_base', '')})"
-                return name
+                    if prog_data["actividades"]:
+                        # Build rows with dynamic week columns
+                        rows = []
+                        for act in prog_data["actividades"]:
+                            row = {
+                                "Activity": act["nombre"],
+                                "Type": cat_lookup_now.get(act["nombre"], act).get("tipo", act.get("tipo", "")),
+                                "Quantity": act["cantidad"],
+                            }
+                            if _is_multi_week:
+                                cps = act.get("cantidad_por_semana", [act["cantidad"]] + [0] * (_n_semanas_prog - 1))
+                                # Ensure cps has the right length
+                                while len(cps) < _n_semanas_prog:
+                                    cps.append(0)
+                                for w in range(1, _n_semanas_prog + 1):
+                                    row[f"W{w}"] = cps[w - 1]
+                            row["Duration (min)"] = cat_lookup_now.get(act["nombre"], act).get("duracion_min", act.get("duracion_min", 0))
+                            row["Prof. Resources"] = ", ".join(cat_lookup_now.get(act["nombre"], act).get("recursos_prof", []))
+                            row["Phys. Resource"] = cat_lookup_now.get(act["nombre"], act).get("recurso_fis", "") or "-"
+                            rows.append(row)
 
-            programa_seleccionado = st.selectbox(
-                "Select Program:",
-                options=_admin_opciones,
-                format_func=_fmt_admin_programa,
-                key="admin_programa_selector",
-            )
+                        df_prog_acts = pd.DataFrame(rows)
 
-            if programa_seleccionado:
-                prog_data = st.session_state.admin_programas[programa_seleccionado]
-
-                # ── Metadatos editables ──
-                col_dur, col_pri = st.columns(2)
-                with col_dur:
-                    nueva_duracion = st.number_input(
-                        "Duration (days)", min_value=1, max_value=90,
-                        value=prog_data["duracion_dias"], step=1,
-                        key=f"duracion_{programa_seleccionado}",
-                    )
-                    st.session_state.admin_programas[programa_seleccionado]["duracion_dias"] = nueva_duracion
-                with col_pri:
-                    nueva_prioridad = st.number_input(
-                        "Priority", min_value=1, max_value=100,
-                        value=prog_data.get("prioridad", 5), step=1,
-                        key=f"prioridad_{programa_seleccionado}",
-                    )
-                    st.session_state.admin_programas[programa_seleccionado]["prioridad"] = nueva_prioridad
-
-                st.markdown("<br>", unsafe_allow_html=True)
-
-                # ── Tabla de actividades del programa ──
-                st.markdown(f"**Activities for {programa_seleccionado}**")
-                st.caption("Only Quantity is editable. Type, duration, and resources are inherited from the catalog.")
-
-                cat_lookup_now = {a["nombre"]: a for a in st.session_state.admin_catalogo}
-
-                if prog_data["actividades"]:
-                    df_prog_acts = pd.DataFrame([
-                        {
-                            "Activity": act["nombre"],
-                            "Type": cat_lookup_now.get(act["nombre"], act).get("tipo", act.get("tipo", "")),
-                            "Quantity": act["cantidad"],
-                            "Duration (min)": cat_lookup_now.get(act["nombre"], act).get("duracion_min", act.get("duracion_min", 0)),
-                            "Prof. Resources": ", ".join(cat_lookup_now.get(act["nombre"], act).get("recursos_prof", [])),
-                            "Phys. Resource": cat_lookup_now.get(act["nombre"], act).get("recurso_fis", "") or "-",
-                        }
-                        for act in prog_data["actividades"]
-                    ])
-
-                    df_prog_acts_editado = st.data_editor(
-                        df_prog_acts,
-                        column_config={
+                        # Build column config dynamically
+                        col_config = {
                             "Activity": st.column_config.TextColumn("Activity", disabled=True, width="large"),
                             "Type": st.column_config.TextColumn("Type", disabled=True, width="small"),
                             "Quantity": st.column_config.NumberColumn("Qty", min_value=0, max_value=100, step=1, format="%d"),
-                            "Duration (min)": st.column_config.NumberColumn("Duration", disabled=True, format="%d"),
-                            "Prof. Resources": st.column_config.TextColumn("Prof. Resources", disabled=True, width="medium"),
-                            "Phys. Resource": st.column_config.TextColumn("Phys. Resource", disabled=True, width="medium"),
-                        },
-                        hide_index=True, use_container_width=True, num_rows="fixed",
-                        key=f"editor_actividades_{programa_seleccionado}",
-                    )
+                        }
+                        if _is_multi_week:
+                            for w in range(1, _n_semanas_prog + 1):
+                                col_config[f"W{w}"] = st.column_config.NumberColumn(
+                                    f"W{w}", min_value=0, max_value=100, step=1, format="%d",
+                                    help=f"Quantity assigned to week {w}",
+                                )
+                        col_config["Duration (min)"] = st.column_config.NumberColumn("Duration", disabled=True, format="%d")
+                        col_config["Prof. Resources"] = st.column_config.TextColumn("Prof. Resources", disabled=True, width="medium")
+                        col_config["Phys. Resource"] = st.column_config.TextColumn("Phys. Resource", disabled=True, width="medium")
 
-                    for i, row in df_prog_acts_editado.iterrows():
-                        st.session_state.admin_programas[programa_seleccionado]["actividades"][i]["cantidad"] = safe_int(row["Quantity"], default=1, min_val=0)
-                else:
-                    st.info("This program has no activities yet. Add one below.")
+                        df_prog_acts_editado = st.data_editor(
+                            df_prog_acts,
+                            column_config=col_config,
+                            hide_index=True, use_container_width=True, num_rows="fixed",
+                            key=f"editor_actividades_{programa_seleccionado}",
+                        )
 
-                st.markdown("<br>", unsafe_allow_html=True)
+                        # Sync back quantity and weekly distribution
+                        _week_warnings = []
+                        for i, row in df_prog_acts_editado.iterrows():
+                            act_ref = st.session_state.admin_programas[programa_seleccionado]["actividades"][i]
+                            new_qty = safe_int(row["Quantity"], default=1, min_val=0)
+                            act_ref["cantidad"] = new_qty
 
-                # ── Agregar actividad del catálogo ──
-                st.markdown("**Add Activity from Catalog**")
-                existing_act_names = {a["nombre"] for a in prog_data["actividades"]}
-                available_acts = sorted([a["nombre"] for a in st.session_state.admin_catalogo if a["nombre"] not in existing_act_names])
+                            if _is_multi_week:
+                                new_cps = [safe_int(row[f"W{w}"], default=0, min_val=0) for w in range(1, _n_semanas_prog + 1)]
+                                week_sum = sum(new_cps)
+                                if week_sum != new_qty and new_qty > 0:
+                                    _week_warnings.append(f"**{act_ref['nombre']}**: W1+W2{'+ W3' if _n_semanas_prog == 3 else ''} = {week_sum}, Qty = {new_qty}")
+                                act_ref["cantidad_por_semana"] = new_cps
+                            else:
+                                act_ref["cantidad_por_semana"] = [new_qty]
 
-                if available_acts:
-                    col_add_act, col_add_qty, col_add_btn = st.columns([3, 1, 1])
-                    with col_add_act:
-                        add_act_name = st.selectbox("Activity", options=available_acts, key=f"add_act_{programa_seleccionado}")
-                    with col_add_qty:
-                        add_act_qty = st.number_input("Quantity", min_value=1, max_value=100, value=1, step=1, key=f"add_qty_{programa_seleccionado}")
-                    with col_add_btn:
-                        st.markdown("<br>", unsafe_allow_html=True)
-                        if st.button("Add", key=f"btn_add_act_{programa_seleccionado}", type="primary"):
-                            canon = cat_lookup_now.get(add_act_name, {})
-                            st.session_state.admin_programas[programa_seleccionado]["actividades"].append({
-                                "nombre": add_act_name,
-                                "tipo": canon.get("tipo", "Otro"),
-                                "cantidad": safe_int(add_act_qty, default=1, min_val=1),
-                                "duracion_min": canon.get("duracion_min", 30),
-                                "recursos_prof": list(canon.get("recursos_prof", [])),
-                                "recurso_fis": canon.get("recurso_fis"),
-                            })
-                            st.rerun()
-                else:
-                    st.caption("All catalog activities are already in this program.")
+                        if _week_warnings:
+                            st.warning("Weekly distribution does not match total Quantity for:\n\n" + "\n\n".join(_week_warnings))
+                    else:
+                        st.info("This program has no activities yet. Add one below.")
 
-                st.markdown("<br>", unsafe_allow_html=True)
+                    st.markdown("<br>", unsafe_allow_html=True)
 
-                # ── Eliminar actividad ──
-                if prog_data["actividades"]:
-                    st.markdown("**Remove Activity**")
-                    act_remove_options = [a["nombre"] for a in prog_data["actividades"]]
-                    col_rem, col_rem_btn = st.columns([3, 1])
-                    with col_rem:
-                        rem_act = st.selectbox("Activity to remove", options=act_remove_options, key=f"rem_act_{programa_seleccionado}")
-                    with col_rem_btn:
-                        st.markdown("<br>", unsafe_allow_html=True)
-                        can_remove = len(prog_data["actividades"]) > 1
-                        if st.button("Remove", key=f"btn_rem_act_{programa_seleccionado}", disabled=not can_remove):
-                            st.session_state.admin_programas[programa_seleccionado]["actividades"] = [
-                                a for a in prog_data["actividades"] if a["nombre"] != rem_act
-                            ]
-                            st.rerun()
-                    if not can_remove:
-                        st.caption("Cannot remove the last activity.")
+                    # ── Agregar actividad del catálogo ──
+                    st.markdown("**Add Activity from Catalog**")
+                    existing_act_names = {a["nombre"] for a in prog_data["actividades"]}
+                    available_acts = sorted([a["nombre"] for a in st.session_state.admin_catalogo if a["nombre"] not in existing_act_names])
 
-                st.markdown("<br>", unsafe_allow_html=True)
+                    if available_acts:
+                        col_add_act, col_add_qty, col_add_btn = st.columns([3, 1, 1])
+                        with col_add_act:
+                            add_act_name = st.selectbox("Activity", options=available_acts, key=f"add_act_{programa_seleccionado}")
+                        with col_add_qty:
+                            add_act_qty = st.number_input("Quantity", min_value=1, max_value=100, value=1, step=1, key=f"add_qty_{programa_seleccionado}")
+                        with col_add_btn:
+                            st.markdown("<br>", unsafe_allow_html=True)
+                            if st.button("Add", key=f"btn_add_act_{programa_seleccionado}", type="primary"):
+                                canon = cat_lookup_now.get(add_act_name, {})
+                                _qty = safe_int(add_act_qty, default=1, min_val=1)
+                                # Default: all quantity in week 1, rest 0
+                                _cps = [_qty] + [0] * (_n_semanas_prog - 1)
+                                st.session_state.admin_programas[programa_seleccionado]["actividades"].append({
+                                    "nombre": add_act_name,
+                                    "tipo": canon.get("tipo", "Otro"),
+                                    "cantidad": _qty,
+                                    "duracion_min": canon.get("duracion_min", 30),
+                                    "recursos_prof": list(canon.get("recursos_prof", [])),
+                                    "recurso_fis": canon.get("recurso_fis"),
+                                    "cantidad_por_semana": _cps,
+                                })
+                                st.rerun()
+                    else:
+                        st.caption("All catalog activities are already in this program.")
 
-                # ── Eliminar programa ──
-                st.markdown("**Delete Program**")
+                    st.markdown("<br>", unsafe_allow_html=True)
+
+                    # ── Eliminar actividad ──
+                    if prog_data["actividades"]:
+                        st.markdown("**Remove Activity**")
+                        act_remove_options = [a["nombre"] for a in prog_data["actividades"]]
+                        col_rem, col_rem_btn = st.columns([3, 1])
+                        with col_rem:
+                            rem_act = st.selectbox("Activity to remove", options=act_remove_options, key=f"rem_act_{programa_seleccionado}")
+                        with col_rem_btn:
+                            st.markdown("<br>", unsafe_allow_html=True)
+                            can_remove = len(prog_data["actividades"]) > 1
+                            if st.button("Remove", key=f"btn_rem_act_{programa_seleccionado}", disabled=not can_remove):
+                                st.session_state.admin_programas[programa_seleccionado]["actividades"] = [
+                                    a for a in prog_data["actividades"] if a["nombre"] != rem_act
+                                ]
+                                st.rerun()
+                        if not can_remove:
+                            st.caption("Cannot remove the last activity.")
+
+                    st.markdown("<br>", unsafe_allow_html=True)
+
+                    # ── Eliminar programa ──
+                    st.markdown("**Delete Program**")
                 # Check for cascade
                 if prog_data.get("tipo") == "programa":
                     linked_exts = [k for k, v in st.session_state.admin_programas.items()
@@ -2050,6 +2195,7 @@ if st.session_state.admin_mode:
                             old_n = len(st.session_state.pacientes_actuales)
                             if old_n != new_n:
                                 st.session_state.pacientes_actuales = [0] * new_n
+                                st.session_state.semana_pacientes = {i: 1 for i in range(new_n)}
                         st.success("Changes saved successfully. The data has been reloaded.")
                         st.balloons()
                     except Exception as e:

@@ -422,3 +422,235 @@ def verificar_admision(pacientes_actuales: list, solicitudes: dict) -> dict:
         "recursos_limitantes": recursos_limitantes,
         "impacto_recursos":    impacto_recursos,
     }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  MODELO DE DATOS POR SEMANA
+# ══════════════════════════════════════════════════════════════════════════════
+
+def construir_modelo_datos_semana(semana: int) -> dict:
+    """Construye las estructuras del modelo usando el consumo de una semana específica.
+
+    Igual que construir_modelo_datos() pero usando cantidad_por_semana[semana-1]
+    en lugar del promedio semanal. Para programas cuya duración en semanas es
+    menor que `semana`, el consumo es 0 (el paciente ya no está).
+
+    Args:
+        semana: int — semana de la estancia (1-indexed: 1, 2 o 3 según el programa)
+
+    Returns:
+        Mismo dict que construir_modelo_datos(), con consumo calculado
+        usando solo las actividades correspondientes a esa semana.
+    """
+    # ── Programas ──────────────────────────────────────────────────────────────
+    nombres_programas = datos.nombres_programas
+    n_programas       = len(nombres_programas)
+    duraciones_dias   = datos.duraciones_dias
+    prioridades       = [datos.programas[p]["prioridad"] for p in nombres_programas]
+
+    # ── Recursos ───────────────────────────────────────────────────────────────
+    nombres_rec_prof = [r["nombre"] for r in datos.recursos_profesionales]
+    nombres_rec_fis  = [r["nombre"] for r in datos.recursos_fisicos]
+    nombres_rec_total = nombres_rec_prof + nombres_rec_fis
+    n_profesionales  = len(nombres_rec_prof)
+    n_recursos       = len(nombres_rec_total)
+
+    cap_rec_prof = datos.cap_rec_prof
+    cap_rec_fis  = datos.cap_rec_fis
+    capacidades  = (
+        [cap_rec_prof[n] for n in nombres_rec_prof]
+        + [cap_rec_fis[n] for n in nombres_rec_fis]
+    )
+
+    # ── Índices para lookup rápido ─────────────────────────────────────────────
+    idx_rec = {nombre: i for i, nombre in enumerate(nombres_rec_total)}
+
+    # ── Calcular matriz de consumo [n_recursos][n_programas] ──────────────────
+    consumo = [[0.0] * n_programas for _ in range(n_recursos)]
+
+    for j, prog_name in enumerate(nombres_programas):
+        prog       = datos.programas[prog_name]
+        dias       = prog["duracion_dias"]
+        n_semanas_prog = max(dias // 7, 1)
+
+        # Si este programa no tiene actividad en esta semana, consumo = 0
+        if semana > n_semanas_prog:
+            continue
+
+        actividades = prog["actividades"]
+
+        for act in actividades:
+            dur_min       = act["duracion_min"]
+            rec_prof_list = act["recursos_prof"]
+            rec_fis       = act["recurso_fis"]
+
+            # Obtener cantidad para esta semana específica
+            cps = act.get("cantidad_por_semana", [act["cantidad"]] * n_semanas_prog)
+            cantidad_semana = cps[semana - 1]
+
+            if cantidad_semana == 0:
+                continue
+
+            # Consumo de esta semana (ya es 1 semana, no promedio)
+            consumo_h = cantidad_semana * dur_min / 60.0
+
+            for rp in rec_prof_list:
+                if rp in idx_rec:
+                    r = idx_rec[rp]
+                    consumo[r][j] += consumo_h
+
+            if rec_fis and rec_fis in idx_rec:
+                r = idx_rec[rec_fis]
+                consumo[r][j] += consumo_h
+
+    # Redondear a 4 decimales para estabilidad numérica
+    consumo = [[round(v, 4) for v in fila] for fila in consumo]
+
+    return {
+        "nombres_programas":  nombres_programas,
+        "duraciones_dias":    duraciones_dias,
+        "prioridades":        prioridades,
+        "n_programas":        n_programas,
+        "nombres_rec_prof":   nombres_rec_prof,
+        "nombres_rec_fis":    nombres_rec_fis,
+        "nombres_rec_total":  nombres_rec_total,
+        "n_profesionales":    n_profesionales,
+        "n_recursos":         n_recursos,
+        "cap_rec_prof":       cap_rec_prof,
+        "cap_rec_fis":        cap_rec_fis,
+        "capacidades":        capacidades,
+        "consumo":            consumo,
+    }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  VERIFICACIÓN DE ADMISIÓN POR SEMANA
+# ══════════════════════════════════════════════════════════════════════════════
+
+def verificar_admision_semana(
+    pacientes_por_semana: dict,
+    solicitudes_semana: dict,
+) -> dict:
+    """Verifica admisión considerando qué semana está cada grupo de pacientes.
+
+    Args:
+        pacientes_por_semana: {semana: [pacientes por programa]}
+            Ejemplo: {1: [3, 2, 0, ...], 2: [5, 1, 0, ...]}
+        solicitudes_semana: {semana: {idx_programa: cantidad_solicitada}}
+            Ejemplo: {1: {0: 2}, 2: {3: 1}}
+
+    Returns:
+        Mismo formato que verificar_admision() actual.
+    """
+    # Recopilar todas las semanas activas
+    todas_semanas = set(pacientes_por_semana.keys()) | set(solicitudes_semana.keys())
+
+    # Usar cualquier semana para obtener estructura base
+    md_base = construir_modelo_datos_semana(1)
+    n_programas      = md_base["n_programas"]
+    n_recursos       = md_base["n_recursos"]
+    capacidades      = md_base["capacidades"]
+    nombre_programas = md_base["nombres_programas"]
+    nombre_recursos  = md_base["nombres_rec_total"]
+    n_profesionales  = md_base["n_profesionales"]
+
+    # ── Calcular uso total sumando contribuciones de todas las semanas ────────
+    uso_actual    = [0.0] * n_recursos
+    uso_adicional = [0.0] * n_recursos
+
+    for sem in todas_semanas:
+        md_sem = construir_modelo_datos_semana(sem)
+        consumo_sem = md_sem["consumo"]
+
+        # Pacientes actuales en esta semana
+        pacs = pacientes_por_semana.get(sem, [0] * n_programas)
+        for r in range(n_recursos):
+            for j in range(n_programas):
+                uso_actual[r] += consumo_sem[r][j] * pacs[j]
+
+        # Solicitudes en esta semana
+        sols = solicitudes_semana.get(sem, {})
+        for prog_idx, cantidad in sols.items():
+            for r in range(n_recursos):
+                uso_adicional[r] += consumo_sem[r][prog_idx] * cantidad
+
+    # ── Verificar factibilidad ────────────────────────────────────────────────
+    factible_global     = True
+    recursos_limitantes = []
+    impacto_recursos    = []
+
+    for r in range(n_recursos):
+        uso_proyectado = uso_actual[r] + uso_adicional[r]
+        cap            = capacidades[r]
+        excedente      = uso_proyectado - cap
+        es_factible    = excedente <= TOL
+        tipo           = "profesional" if r < n_profesionales else "fisico"
+
+        if not es_factible:
+            factible_global = False
+            recursos_limitantes.append({
+                "nombre":                  nombre_recursos[r],
+                "tipo":                    tipo,
+                "capacidad":               cap,
+                "uso_actual":              uso_actual[r],
+                "uso_adicional_requerido": uso_adicional[r],
+                "uso_total_proyectado":    uso_proyectado,
+                "excedente":               excedente,
+                "pct_uso_proyectado":      (uso_proyectado / cap * 100) if cap > 0 else 0,
+            })
+
+        if uso_adicional[r] > TOL:
+            impacto_recursos.append({
+                "nombre":        nombre_recursos[r],
+                "tipo":          tipo,
+                "capacidad":     cap,
+                "uso_actual":    uso_actual[r],
+                "pct_actual":    (uso_actual[r] / cap * 100) if cap > 0 else 0,
+                "uso_adicional": uso_adicional[r],
+                "uso_proyectado": uso_proyectado,
+                "pct_proyectado": (uso_proyectado / cap * 100) if cap > 0 else 0,
+                "factible":      es_factible,
+            })
+
+    recursos_limitantes.sort(key=lambda x: x["excedente"], reverse=True)
+    impacto_recursos.sort(key=lambda x: x["pct_proyectado"], reverse=True)
+
+    # ── Detalle por solicitud ─────────────────────────────────────────────────
+    solicitudes_detalle = []
+    for sem, sols in solicitudes_semana.items():
+        md_sem = construir_modelo_datos_semana(sem)
+        consumo_sem = md_sem["consumo"]
+        cap_restante = [max(capacidades[r] - uso_actual[r], 0.0) for r in range(n_recursos)]
+
+        for prog_idx, cantidad_solicitada in sols.items():
+            max_admisible = float("inf")
+            rec_limitante = None
+
+            for r in range(n_recursos):
+                coef = consumo_sem[r][prog_idx]
+                if coef > TOL:
+                    max_por_rec = cap_restante[r] / coef
+                    if max_por_rec < max_admisible:
+                        max_admisible = max_por_rec
+                        rec_limitante = nombre_recursos[r]
+
+            max_admisible    = int(max(max_admisible, 0)) if max_admisible != float("inf") else 0
+            es_factible_prog = cantidad_solicitada <= max_admisible
+
+            solicitudes_detalle.append({
+                "programa":            nombre_programas[prog_idx],
+                "programa_idx":        prog_idx,
+                "semana":              sem,
+                "cantidad_solicitada": cantidad_solicitada,
+                "max_admisible":       max_admisible,
+                "factible":            es_factible_prog,
+                "recurso_limitante":   rec_limitante if not es_factible_prog else None,
+                "deficit":             max(cantidad_solicitada - max_admisible, 0),
+            })
+
+    return {
+        "factible":            factible_global,
+        "solicitudes_detalle": solicitudes_detalle,
+        "recursos_limitantes": recursos_limitantes,
+        "impacto_recursos":    impacto_recursos,
+    }
