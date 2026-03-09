@@ -9,7 +9,7 @@ import os
 import copy
 import importlib
 import numpy as np
-from optimizador_v2 import obtener_datos_base, ejecutar_optimizacion, verificar_admision, verificar_admision_semana
+from optimizador_v2 import obtener_datos_base, ejecutar_optimizacion, verificar_admision, verificar_admision_semana, construir_modelo_datos_semana
 import BD_sanoviv as datos
 
 
@@ -608,10 +608,12 @@ if "resultados" not in st.session_state:
 if "resultado_verificacion" not in st.session_state:
     st.session_state.resultado_verificacion = None
 
-if "semana_pacientes" not in st.session_state:
-    st.session_state.semana_pacientes = {
-        i: 1 for i in range(len(datos_base["nombre_programas"]))
-    }
+if "pacientes_por_semana_tab" not in st.session_state:
+    # {prog_idx: [w1_count, w2_count, w3_count]} — length matches program weeks
+    st.session_state.pacientes_por_semana_tab = {}
+    for i, nombre in enumerate(datos_base["nombre_programas"]):
+        n_sem = max(datos_base["duraciones_dias"][nombre] // 7, 1)
+        st.session_state.pacientes_por_semana_tab[i] = [0] * n_sem
 
 if "admin_mode" not in st.session_state:
     st.session_state.admin_mode = False
@@ -644,14 +646,25 @@ for editor_key, idx_map in [("editor_pacientes_base", indices_base), ("editor_pa
         editor_data = st.session_state[editor_key]
         if "edited_rows" in editor_data and editor_data["edited_rows"]:
             for row_idx, changes in editor_data["edited_rows"].items():
-                if "Current Patients" in changes:
-                    try:
-                        local_idx = safe_int(row_idx, default=0, min_val=0, max_val=len(idx_map)-1)
-                        global_idx = idx_map[local_idx]
-                        new_value = safe_int(changes["Current Patients"], default=0, min_val=0, max_val=100)
-                        st.session_state.pacientes_actuales[global_idx] = new_value
-                    except (IndexError, TypeError, ValueError):
-                        pass
+                try:
+                    local_idx = safe_int(row_idx, default=0, min_val=0, max_val=len(idx_map)-1)
+                    global_idx = idx_map[local_idx]
+                    _nombre_prog = datos_base["nombre_programas"][global_idx]
+                    _n_sem = max(datos_base["duraciones_dias"][_nombre_prog] // 7, 1)
+                    _cur_weeks = st.session_state.pacientes_por_semana_tab.get(global_idx, [0] * _n_sem)
+                    _changed = False
+                    for _w in range(1, _n_sem + 1):
+                        col_name = f"W{_w}"
+                        if col_name in changes:
+                            new_val = safe_int(changes[col_name], default=0, min_val=0, max_val=100)
+                            if len(_cur_weeks) >= _w:
+                                _cur_weeks[_w - 1] = new_val
+                            _changed = True
+                    if _changed:
+                        st.session_state.pacientes_por_semana_tab[global_idx] = _cur_weeks
+                        st.session_state.pacientes_actuales[global_idx] = sum(_cur_weeks)
+                except (IndexError, TypeError, ValueError):
+                    pass
             st.session_state.resultados = None
 
 # === PESTAÑAS ===
@@ -666,6 +679,7 @@ else:
 with tab1:
     # Métricas principales en la parte superior
     total_actuales = sum(st.session_state.pacientes_actuales)
+    st.caption("Note: Optimization results are based on weekly averages per program. For precise per-week resource availability, use the **Verify Admission** tab.")
 
     if st.session_state.resultados is not None and st.session_state.resultados["estado"] == "Optimal":
         resultados = st.session_state.resultados
@@ -959,36 +973,49 @@ with tab2:
 
     # ── Sección: Programas Base ──────────────────────────────────────────────
     st.markdown("#### Base Programs")
+    st.caption("Enter the number of patients per week of stay. For multi-week programs, specify how many patients are in each week.")
 
-    df_base = pd.DataFrame({
-        "Program": [_nombres[i] for i in indices_base],
-        "Current Patients": [st.session_state.pacientes_actuales[i] for i in indices_base],
-        "Priority": [datos_base["prioridad_programas"][i] for i in indices_base],
-    })
+    # Determine max weeks across all base programs
+    _max_weeks_base = max(
+        max(datos_base["duraciones_dias"][_nombres[i]] // 7, 1)
+        for i in indices_base
+    )
+
+    # Build DataFrame with W1, W2, W3 columns
+    _base_rows = []
+    for i in indices_base:
+        _nombre = _nombres[i]
+        _n_sem = max(datos_base["duraciones_dias"][_nombre] // 7, 1)
+        _weeks = st.session_state.pacientes_por_semana_tab.get(i, [0] * _n_sem)
+        # Ensure correct length
+        while len(_weeks) < _n_sem:
+            _weeks.append(0)
+        row = {"Program": _nombre}
+        for w in range(1, _max_weeks_base + 1):
+            row[f"W{w}"] = _weeks[w - 1] if w <= _n_sem else 0
+        row["Total"] = sum(_weeks[:_n_sem])
+        row["Priority"] = datos_base["prioridad_programas"][i]
+        row["_n_sem"] = _n_sem  # helper, hidden
+        _base_rows.append(row)
+
+    df_base = pd.DataFrame(_base_rows)
+
+    # Build column config
+    _base_col_config = {
+        "Program": st.column_config.TextColumn("Treatment Program", disabled=True, width="large"),
+    }
+    for w in range(1, _max_weeks_base + 1):
+        _base_col_config[f"W{w}"] = st.column_config.NumberColumn(
+            f"W{w}", min_value=0, max_value=100, step=1, format="%d",
+            help=f"Patients currently in week {w} of their program",
+        )
+    _base_col_config["Total"] = st.column_config.NumberColumn("Total", disabled=True, format="%d")
+    _base_col_config["Priority"] = st.column_config.NumberColumn("Priority", disabled=True, format="%.2f")
 
     df_base_editado = st.data_editor(
         df_base,
-        column_config={
-            "Program": st.column_config.TextColumn(
-                "Treatment Program",
-                disabled=True,
-                width="large",
-            ),
-            "Current Patients": st.column_config.NumberColumn(
-                "Current Patients",
-                min_value=0,
-                max_value=100,
-                step=1,
-                format="%d",
-                help="Number of patients currently in the program",
-            ),
-            "Priority": st.column_config.NumberColumn(
-                "Priority",
-                disabled=True,
-                format="%.2f",
-                help="Program priority weight (higher = more important)",
-            ),
-        },
+        column_config=_base_col_config,
+        column_order=["Program"] + [f"W{w}" for w in range(1, _max_weeks_base + 1)] + ["Total", "Priority"],
         hide_index=True,
         use_container_width=True,
         key="editor_pacientes_base",
@@ -998,36 +1025,24 @@ with tab2:
     try:
         for local_idx, global_idx in enumerate(indices_base):
             if local_idx < len(df_base_editado):
-                val = safe_int(df_base_editado.iloc[local_idx]["Current Patients"], default=0, min_val=0, max_val=100)
-                if val != st.session_state.pacientes_actuales[global_idx]:
-                    st.session_state.pacientes_actuales[global_idx] = val
+                _nombre = _nombres[global_idx]
+                _n_sem = max(datos_base["duraciones_dias"][_nombre] // 7, 1)
+                _new_weeks = []
+                for w in range(1, _n_sem + 1):
+                    val = safe_int(df_base_editado.iloc[local_idx][f"W{w}"], default=0, min_val=0, max_val=100)
+                    _new_weeks.append(val)
+                # Zero out weeks beyond program duration (user may have typed in disabled-looking cells)
+                for w in range(_n_sem + 1, _max_weeks_base + 1):
+                    typed_val = safe_int(df_base_editado.iloc[local_idx].get(f"W{w}", 0), default=0, min_val=0)
+                    if typed_val > 0:
+                        pass  # silently ignore — these columns shouldn't have values
+                _old_weeks = st.session_state.pacientes_por_semana_tab.get(global_idx, [0] * _n_sem)
+                if _new_weeks != _old_weeks[:_n_sem]:
+                    st.session_state.pacientes_por_semana_tab[global_idx] = _new_weeks
+                    st.session_state.pacientes_actuales[global_idx] = sum(_new_weeks)
                     st.session_state.resultados = None
     except Exception:
         st.warning("Some values could not be processed. Please enter valid numbers (0-100).")
-
-    # ── Week selectors for multi-week programs ────────────────────────────────
-    _multi_week_base = [
-        (i, _nombres[i], max(datos_base["duraciones_dias"][_nombres[i]] // 7, 1))
-        for i in indices_base
-        if max(datos_base["duraciones_dias"][_nombres[i]] // 7, 1) > 1
-    ]
-    if _multi_week_base:
-        st.markdown("##### Week of Stay (multi-week programs)")
-        st.caption("Select the week each group of patients is currently in.")
-        _cols_per_row = 3
-        for row_start in range(0, len(_multi_week_base), _cols_per_row):
-            row_items = _multi_week_base[row_start:row_start + _cols_per_row]
-            cols = st.columns(_cols_per_row)
-            for col_idx, (global_idx, nombre, n_semanas) in enumerate(row_items):
-                with cols[col_idx]:
-                    current_week = st.session_state.semana_pacientes.get(global_idx, 1)
-                    new_week = st.selectbox(
-                        nombre,
-                        options=list(range(1, n_semanas + 1)),
-                        index=min(current_week - 1, n_semanas - 1),
-                        key=f"week_base_{global_idx}",
-                    )
-                    st.session_state.semana_pacientes[global_idx] = new_week
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -1038,37 +1053,20 @@ with tab2:
     df_ext = pd.DataFrame({
         "Extension": [_nombres[i] for i in indices_ext],
         "Base Program": [_programas_dict[_nombres[i]].get("programa_base", "") for i in indices_ext],
-        "Current Patients": [st.session_state.pacientes_actuales[i] for i in indices_ext],
+        "W1": [st.session_state.pacientes_por_semana_tab.get(i, [0])[0] for i in indices_ext],
         "Priority": [datos_base["prioridad_programas"][i] for i in indices_ext],
     })
 
     df_ext_editado = st.data_editor(
         df_ext,
         column_config={
-            "Extension": st.column_config.TextColumn(
-                "Extension",
-                disabled=True,
-                width="large",
-            ),
-            "Base Program": st.column_config.TextColumn(
-                "Base Program",
-                disabled=True,
-                width="medium",
-            ),
-            "Current Patients": st.column_config.NumberColumn(
-                "Current Patients",
-                min_value=0,
-                max_value=100,
-                step=1,
-                format="%d",
+            "Extension": st.column_config.TextColumn("Extension", disabled=True, width="large"),
+            "Base Program": st.column_config.TextColumn("Base Program", disabled=True, width="medium"),
+            "W1": st.column_config.NumberColumn(
+                "W1", min_value=0, max_value=100, step=1, format="%d",
                 help="Number of patients currently in this extension",
             ),
-            "Priority": st.column_config.NumberColumn(
-                "Priority",
-                disabled=True,
-                format="%.2f",
-                help="Program priority weight (higher = more important)",
-            ),
+            "Priority": st.column_config.NumberColumn("Priority", disabled=True, format="%.2f"),
         },
         hide_index=True,
         use_container_width=True,
@@ -1079,8 +1077,10 @@ with tab2:
     try:
         for local_idx, global_idx in enumerate(indices_ext):
             if local_idx < len(df_ext_editado):
-                val = safe_int(df_ext_editado.iloc[local_idx]["Current Patients"], default=0, min_val=0, max_val=100)
-                if val != st.session_state.pacientes_actuales[global_idx]:
+                val = safe_int(df_ext_editado.iloc[local_idx]["W1"], default=0, min_val=0, max_val=100)
+                _old = st.session_state.pacientes_por_semana_tab.get(global_idx, [0])
+                if [val] != _old:
+                    st.session_state.pacientes_por_semana_tab[global_idx] = [val]
                     st.session_state.pacientes_actuales[global_idx] = val
                     st.session_state.resultados = None
     except Exception:
@@ -1106,7 +1106,9 @@ with tab2:
     # Acción de limpiar pacientes
     if limpiar:
         st.session_state.pacientes_actuales = [0] * len(datos_base["nombre_programas"])
-        st.session_state.semana_pacientes = {i: 1 for i in range(len(datos_base["nombre_programas"]))}
+        for i, nombre in enumerate(datos_base["nombre_programas"]):
+            n_sem = max(datos_base["duraciones_dias"][nombre] // 7, 1)
+            st.session_state.pacientes_por_semana_tab[i] = [0] * n_sem
         st.session_state.resultados = None
         st.rerun()
 
@@ -1174,17 +1176,17 @@ with tab2:
 
         df_resultado = pd.DataFrame({
             "Program": resultados["nombre_programas"],
-            "Week": [st.session_state.semana_pacientes.get(i, 1) for i in range(len(resultados["nombre_programas"]))],
             "Current": st.session_state.pacientes_actuales,
             "Additional": resultados["pacientes_adicionales"],
             "Total": [a + b for a, b in zip(st.session_state.pacientes_actuales, resultados["pacientes_adicionales"])],
         })
 
+        st.caption("Note: Optimization results are based on weekly averages. Use **Verify Admission** for precise per-week availability.")
+
         st.dataframe(
             df_resultado,
             column_config={
                 "Program": st.column_config.TextColumn("Program", width="large"),
-                "Week": st.column_config.NumberColumn("Week", format="%d"),
                 "Current": st.column_config.NumberColumn("Current", format="%d"),
                 "Additional": st.column_config.NumberColumn("Additional", format="%d"),
                 "Total": st.column_config.NumberColumn("Projected Total", format="%d"),
@@ -1206,101 +1208,124 @@ with tab3:
     </div>
     """, unsafe_allow_html=True)
 
-    if st.session_state.resultados is not None and st.session_state.resultados["estado"] == "Optimal":
-        resultados = st.session_state.resultados
+    st.caption("Resource usage is calculated using actual per-week consumption based on patient distribution.")
 
-        if resultados["tabla_recursos"]:
-            # Preparar datos separados por tipo
-            tabla_prof = []
-            tabla_fis = []
-            for rec in resultados["tabla_recursos"]:
-                estado = "✅ OK" if rec["ok"] else "⛔ Exceeded"
-                row = {
-                    "Resource": rec["nombre"],
-                    "Capacity (h)": rec["capacidad"],
-                    "Current Usage (h)": rec["uso_actual"],
-                    "Current Usage (%)": rec["pct_actual"],
-                    "Additional Usage (h)": rec["uso_adicional"],
-                    "Total Usage (h)": rec["uso_total"],
-                    "Total Usage (%)": rec["pct_total"],
-                    "Status": estado,
-                }
-                if rec["tipo"] == "profesional":
-                    tabla_prof.append(row)
-                else:
-                    tabla_fis.append(row)
+    # ── Calculate real resource usage from per-week patient data ──────────
+    # Build pacientes_por_semana from pacientes_por_semana_tab
+    _res_pacientes_por_semana = {}
+    _n_total_progs = len(datos_base["nombre_programas"])
+    for _idx_prog in range(_n_total_progs):
+        _weeks_data = st.session_state.pacientes_por_semana_tab.get(_idx_prog, [0])
+        for _w_idx, _n_pac in enumerate(_weeks_data):
+            if _n_pac > 0:
+                _sem = _w_idx + 1
+                if _sem not in _res_pacientes_por_semana:
+                    _res_pacientes_por_semana[_sem] = [0] * _n_total_progs
+                _res_pacientes_por_semana[_sem][_idx_prog] = _n_pac
 
-            _col_config_recursos = {
-                "Resource": st.column_config.TextColumn("Resource", width="medium"),
-                "Capacity (h)": st.column_config.NumberColumn("Capacity", format="%.1f"),
-                "Current Usage (h)": st.column_config.NumberColumn("Current Usage", format="%.1f"),
-                "Current Usage (%)": st.column_config.ProgressColumn(
-                    "% Current",
-                    min_value=0,
-                    max_value=100,
-                    format="%.1f%%",
-                ),
-                "Additional Usage (h)": st.column_config.NumberColumn("Add. Usage", format="%.1f"),
-                "Total Usage (h)": st.column_config.NumberColumn("Total Usage", format="%.1f"),
-                "Total Usage (%)": st.column_config.ProgressColumn(
-                    "% Total",
-                    min_value=0,
-                    max_value=100,
-                    format="%.1f%%",
-                ),
-                "Status": st.column_config.TextColumn("Status", width="small"),
-            }
+    # Calculate usage across all weeks
+    _md_ref = construir_modelo_datos_semana(1)
+    _n_recursos = _md_ref["n_recursos"]
+    _n_profesionales = _md_ref["n_profesionales"]
+    _nombre_recursos = _md_ref["nombres_rec_total"]
+    _capacidades = _md_ref["capacidades"]
 
-            # ── Professional Resources ───────────────────────────────────────
-            st.markdown('<div class="section-header">Professional Resources</div>', unsafe_allow_html=True)
+    _uso_real = [0.0] * _n_recursos
+    for _sem, _pacs in _res_pacientes_por_semana.items():
+        _md_sem = construir_modelo_datos_semana(_sem)
+        _consumo_sem = _md_sem["consumo"]
+        for _r in range(_n_recursos):
+            for _j in range(_n_total_progs):
+                _uso_real[_r] += _consumo_sem[_r][_j] * _pacs[_j]
 
-            if tabla_prof:
-                df_prof = pd.DataFrame(tabla_prof)
-                st.dataframe(
-                    df_prof,
-                    column_config=_col_config_recursos,
-                    hide_index=True,
-                    use_container_width=True,
-                )
-            else:
-                st.info("No professional resources to display.")
+    # Build resource tables
+    tabla_prof = []
+    tabla_fis = []
+    _exceeded_list = []
+    for _r in range(_n_recursos):
+        _cap = _capacidades[_r]
+        _uso = _uso_real[_r]
+        _pct = (_uso / _cap * 100) if _cap > 0 else 0.0
+        _ok = _uso <= _cap + 1e-6
+        _tipo = "profesional" if _r < _n_profesionales else "fisico"
+        row = {
+            "Resource": _nombre_recursos[_r],
+            "Capacity (h)": _cap,
+            "Current Usage (h)": _uso,
+            "Current Usage (%)": _pct,
+            "Status": "OK" if _ok else "Exceeded",
+        }
+        if _tipo == "profesional":
+            tabla_prof.append(row)
+        else:
+            tabla_fis.append(row)
+        if not _ok:
+            _exceeded_list.append({
+                "Resource": _nombre_recursos[_r],
+                "Current Usage (h)": _uso,
+                "Capacity (h)": _cap,
+                "Excess (h)": _uso - _cap,
+            })
 
-            st.markdown("<br>", unsafe_allow_html=True)
+    _col_config_recursos = {
+        "Resource": st.column_config.TextColumn("Resource", width="medium"),
+        "Capacity (h)": st.column_config.NumberColumn("Capacity", format="%.1f"),
+        "Current Usage (h)": st.column_config.NumberColumn("Current Usage", format="%.1f"),
+        "Current Usage (%)": st.column_config.ProgressColumn(
+            "% Current",
+            min_value=0,
+            max_value=100,
+            format="%.1f%%",
+        ),
+        "Status": st.column_config.TextColumn("Status", width="small"),
+    }
 
-            # ── Physical Resources ───────────────────────────────────────────
-            st.markdown('<div class="section-header">Physical Resources</div>', unsafe_allow_html=True)
+    # ── Professional Resources ───────────────────────────────────────
+    st.markdown('<div class="section-header">Professional Resources</div>', unsafe_allow_html=True)
 
-            if tabla_fis:
-                df_fis = pd.DataFrame(tabla_fis)
-                st.dataframe(
-                    df_fis,
-                    column_config=_col_config_recursos,
-                    hide_index=True,
-                    use_container_width=True,
-                )
-            else:
-                st.info("No physical resources to display.")
-
-        # Recursos excedidos
-        if resultados["recursos_excedidos"]:
-            st.markdown('<div class="section-header">⚠️ Exceeded Resources (Not included in optimization)</div>', unsafe_allow_html=True)
-
-            df_excedidos = pd.DataFrame(resultados["recursos_excedidos"])
-            df_excedidos.columns = ["Resource", "Current Usage (h)", "Capacity (h)", "Excess (h)"]
-
-            st.dataframe(
-                df_excedidos,
-                column_config={
-                    "Resource": st.column_config.TextColumn("Resource", width="medium"),
-                    "Current Usage (h)": st.column_config.NumberColumn("Current Usage", format="%.1f"),
-                    "Capacity (h)": st.column_config.NumberColumn("Capacity", format="%.1f"),
-                    "Excess (h)": st.column_config.NumberColumn("Excess", format="%.1f"),
-                },
-                hide_index=True,
-                use_container_width=True,
-            )
+    if tabla_prof:
+        df_prof = pd.DataFrame(tabla_prof)
+        st.dataframe(
+            df_prof,
+            column_config=_col_config_recursos,
+            hide_index=True,
+            use_container_width=True,
+        )
     else:
-        st.info("👆 Go to the **Patients** tab to run the optimization and see resource details.")
+        st.info("No professional resources to display.")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ── Physical Resources ───────────────────────────────────────────
+    st.markdown('<div class="section-header">Physical Resources</div>', unsafe_allow_html=True)
+
+    if tabla_fis:
+        df_fis = pd.DataFrame(tabla_fis)
+        st.dataframe(
+            df_fis,
+            column_config=_col_config_recursos,
+            hide_index=True,
+            use_container_width=True,
+        )
+    else:
+        st.info("No physical resources to display.")
+
+    # Recursos excedidos
+    if _exceeded_list:
+        st.markdown('<div class="section-header">Exceeded Resources</div>', unsafe_allow_html=True)
+
+        df_excedidos = pd.DataFrame(_exceeded_list)
+        st.dataframe(
+            df_excedidos,
+            column_config={
+                "Resource": st.column_config.TextColumn("Resource", width="medium"),
+                "Current Usage (h)": st.column_config.NumberColumn("Current Usage", format="%.1f"),
+                "Capacity (h)": st.column_config.NumberColumn("Capacity", format="%.1f"),
+                "Excess (h)": st.column_config.NumberColumn("Excess", format="%.1f"),
+            },
+            hide_index=True,
+            use_container_width=True,
+        )
 
 # =====================================================
 # TAB 4: VERIFICAR ADMISIÓN
@@ -1430,14 +1455,17 @@ with tab4:
         if verificar_btn:
             with st.spinner("Verifying feasibility..."):
                 try:
-                    # Construir pacientes_por_semana desde session_state
+                    # Construir pacientes_por_semana desde pacientes_por_semana_tab
                     pacientes_por_semana = {}
-                    for idx_prog, n_pac in enumerate(st.session_state.pacientes_actuales):
-                        if n_pac > 0:
-                            semana = st.session_state.semana_pacientes.get(idx_prog, 1)
-                            if semana not in pacientes_por_semana:
-                                pacientes_por_semana[semana] = [0] * len(st.session_state.pacientes_actuales)
-                            pacientes_por_semana[semana][idx_prog] = n_pac
+                    _n_progs = len(st.session_state.pacientes_actuales)
+                    for idx_prog in range(_n_progs):
+                        _weeks_data = st.session_state.pacientes_por_semana_tab.get(idx_prog, [0])
+                        for _w_idx, _n_pac in enumerate(_weeks_data):
+                            if _n_pac > 0:
+                                _sem = _w_idx + 1
+                                if _sem not in pacientes_por_semana:
+                                    pacientes_por_semana[_sem] = [0] * _n_progs
+                                pacientes_por_semana[_sem][idx_prog] = _n_pac
 
                     # Construir solicitudes_semana desde solicitudes_admision
                     solicitudes_semana = {}
@@ -2379,7 +2407,11 @@ if st.session_state.admin_mode:
                             old_n = len(st.session_state.pacientes_actuales)
                             if old_n != new_n:
                                 st.session_state.pacientes_actuales = [0] * new_n
-                                st.session_state.semana_pacientes = {i: 1 for i in range(new_n)}
+                                _new_datos_base = obtener_datos_base()
+                                st.session_state.pacientes_por_semana_tab = {}
+                                for _i, _nom in enumerate(_new_datos_base["nombre_programas"]):
+                                    _n_s = max(_new_datos_base["duraciones_dias"][_nom] // 7, 1)
+                                    st.session_state.pacientes_por_semana_tab[_i] = [0] * _n_s
                         st.success("Changes saved successfully. The data has been reloaded.")
                         st.balloons()
                     except Exception as e:
