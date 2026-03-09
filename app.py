@@ -702,6 +702,11 @@ with tab1:
     </div>
     """, unsafe_allow_html=True)
 
+    # Invalidate stale results if program count changed
+    if (st.session_state.resultados is not None
+            and len(st.session_state.resultados["nombre_programas"]) != len(st.session_state.pacientes_actuales)):
+        st.session_state.resultados = None
+
     if st.session_state.resultados is not None and st.session_state.resultados["estado"] == "Optimal":
         resultados = st.session_state.resultados
         total_adicionales = resultados["total_pacientes"]
@@ -1154,6 +1159,11 @@ with tab2:
                 st.session_state.resultados = None
 
     # Mostrar resultados de pacientes adicionales si existen
+    # Invalidate stale results if program count changed
+    if (st.session_state.resultados is not None
+            and len(st.session_state.resultados["nombre_programas"]) != len(st.session_state.pacientes_actuales)):
+        st.session_state.resultados = None
+
     if st.session_state.resultados is not None and st.session_state.resultados["estado"] == "Optimal":
         resultados = st.session_state.resultados
 
