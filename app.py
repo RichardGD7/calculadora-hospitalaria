@@ -641,7 +641,18 @@ with st.sidebar:
 # === SINCRONIZAR DATOS DEL EDITOR (antes de renderizar pestañas) ===
 # Esto asegura que los cambios del data_editor se reflejen en todas las pestañas
 # Con validación robusta para evitar errores por caracteres inválidos
-for editor_key, idx_map in [("editor_pacientes_base", indices_base), ("editor_pacientes_ext", indices_ext)]:
+# Pre-render sync: build editor key → index map for grouped base tables + extensions
+_pre_sync_editors = []
+# Group base programs by weeks (same grouping as tab2)
+_pre_base_by_weeks = {}
+for i in indices_base:
+    _n_s = max(datos_base["duraciones_dias"][_nombres[i]] // 7, 1)
+    _pre_base_by_weeks.setdefault(_n_s, []).append(i)
+for _n_s in sorted(_pre_base_by_weeks.keys()):
+    _pre_sync_editors.append((f"editor_pacientes_base_{_n_s}w", _pre_base_by_weeks[_n_s]))
+_pre_sync_editors.append(("editor_pacientes_ext", indices_ext))
+
+for editor_key, idx_map in _pre_sync_editors:
     if editor_key in st.session_state:
         editor_data = st.session_state[editor_key]
         if "edited_rows" in editor_data and editor_data["edited_rows"]:
@@ -651,7 +662,7 @@ for editor_key, idx_map in [("editor_pacientes_base", indices_base), ("editor_pa
                     global_idx = idx_map[local_idx]
                     _nombre_prog = datos_base["nombre_programas"][global_idx]
                     _n_sem = max(datos_base["duraciones_dias"][_nombre_prog] // 7, 1)
-                    _cur_weeks = st.session_state.pacientes_por_semana_tab.get(global_idx, [0] * _n_sem)
+                    _cur_weeks = list(st.session_state.pacientes_por_semana_tab.get(global_idx, [0] * _n_sem))
                     _changed = False
                     for _w in range(1, _n_sem + 1):
                         col_name = f"W{_w}"
@@ -973,76 +984,77 @@ with tab2:
 
     # ── Sección: Programas Base ──────────────────────────────────────────────
     st.markdown("#### Base Programs")
-    st.caption("Enter the number of patients per week of stay. For multi-week programs, specify how many patients are in each week.")
+    st.caption("Enter the number of patients per week of stay. Programs are grouped by duration.")
 
-    # Determine max weeks across all base programs
-    _max_weeks_base = max(
-        max(datos_base["duraciones_dias"][_nombres[i]] // 7, 1)
-        for i in indices_base
-    )
-
-    # Build DataFrame with W1, W2, W3 columns
-    _base_rows = []
+    # Group base programs by number of weeks
+    _base_by_weeks = {}
     for i in indices_base:
         _nombre = _nombres[i]
         _n_sem = max(datos_base["duraciones_dias"][_nombre] // 7, 1)
-        _weeks = st.session_state.pacientes_por_semana_tab.get(i, [0] * _n_sem)
-        # Ensure correct length
-        while len(_weeks) < _n_sem:
-            _weeks.append(0)
-        row = {"Program": _nombre}
-        for w in range(1, _max_weeks_base + 1):
-            row[f"W{w}"] = _weeks[w - 1] if w <= _n_sem else 0
-        row["Total"] = sum(_weeks[:_n_sem])
-        row["Priority"] = datos_base["prioridad_programas"][i]
-        row["_n_sem"] = _n_sem  # helper, hidden
-        _base_rows.append(row)
+        _base_by_weeks.setdefault(_n_sem, []).append(i)
 
-    df_base = pd.DataFrame(_base_rows)
+    for _grp_n_sem in sorted(_base_by_weeks.keys()):
+        _grp_indices = _base_by_weeks[_grp_n_sem]
+        _week_label = "week" if _grp_n_sem == 1 else "weeks"
+        st.markdown(f"##### {_grp_n_sem}-{_week_label} programs")
 
-    # Build column config
-    _base_col_config = {
-        "Program": st.column_config.TextColumn("Treatment Program", disabled=True, width="large"),
-    }
-    for w in range(1, _max_weeks_base + 1):
-        _base_col_config[f"W{w}"] = st.column_config.NumberColumn(
-            f"W{w}", min_value=0, max_value=100, step=1, format="%d",
-            help=f"Patients currently in week {w} of their program",
+        _grp_rows = []
+        for i in _grp_indices:
+            _nombre = _nombres[i]
+            _weeks = st.session_state.pacientes_por_semana_tab.get(i, [0] * _grp_n_sem)
+            while len(_weeks) < _grp_n_sem:
+                _weeks.append(0)
+            row = {"Program": _nombre}
+            for w in range(1, _grp_n_sem + 1):
+                row[f"W{w}"] = _weeks[w - 1]
+            if _grp_n_sem > 1:
+                row["Total"] = sum(_weeks[:_grp_n_sem])
+            row["Priority"] = datos_base["prioridad_programas"][i]
+            _grp_rows.append(row)
+
+        _grp_df = pd.DataFrame(_grp_rows)
+
+        _grp_col_config = {
+            "Program": st.column_config.TextColumn("Treatment Program", disabled=True, width="large"),
+        }
+        for w in range(1, _grp_n_sem + 1):
+            _grp_col_config[f"W{w}"] = st.column_config.NumberColumn(
+                f"W{w}", min_value=0, max_value=100, step=1, format="%d",
+                help=f"Patients currently in week {w}",
+            )
+        if _grp_n_sem > 1:
+            _grp_col_config["Total"] = st.column_config.NumberColumn("Total", disabled=True, format="%d")
+        _grp_col_config["Priority"] = st.column_config.NumberColumn("Priority", disabled=True, format="%.2f")
+
+        _col_order = ["Program"] + [f"W{w}" for w in range(1, _grp_n_sem + 1)]
+        if _grp_n_sem > 1:
+            _col_order.append("Total")
+        _col_order.append("Priority")
+
+        _grp_df_edited = st.data_editor(
+            _grp_df,
+            column_config=_grp_col_config,
+            column_order=_col_order,
+            hide_index=True,
+            use_container_width=True,
+            key=f"editor_pacientes_base_{_grp_n_sem}w",
         )
-    _base_col_config["Total"] = st.column_config.NumberColumn("Total", disabled=True, format="%d")
-    _base_col_config["Priority"] = st.column_config.NumberColumn("Priority", disabled=True, format="%.2f")
 
-    df_base_editado = st.data_editor(
-        df_base,
-        column_config=_base_col_config,
-        column_order=["Program"] + [f"W{w}" for w in range(1, _max_weeks_base + 1)] + ["Total", "Priority"],
-        hide_index=True,
-        use_container_width=True,
-        key="editor_pacientes_base",
-    )
-
-    # Sync base programs back
-    try:
-        for local_idx, global_idx in enumerate(indices_base):
-            if local_idx < len(df_base_editado):
-                _nombre = _nombres[global_idx]
-                _n_sem = max(datos_base["duraciones_dias"][_nombre] // 7, 1)
-                _new_weeks = []
-                for w in range(1, _n_sem + 1):
-                    val = safe_int(df_base_editado.iloc[local_idx][f"W{w}"], default=0, min_val=0, max_val=100)
-                    _new_weeks.append(val)
-                # Zero out weeks beyond program duration (user may have typed in disabled-looking cells)
-                for w in range(_n_sem + 1, _max_weeks_base + 1):
-                    typed_val = safe_int(df_base_editado.iloc[local_idx].get(f"W{w}", 0), default=0, min_val=0)
-                    if typed_val > 0:
-                        pass  # silently ignore — these columns shouldn't have values
-                _old_weeks = st.session_state.pacientes_por_semana_tab.get(global_idx, [0] * _n_sem)
-                if _new_weeks != _old_weeks[:_n_sem]:
-                    st.session_state.pacientes_por_semana_tab[global_idx] = _new_weeks
-                    st.session_state.pacientes_actuales[global_idx] = sum(_new_weeks)
-                    st.session_state.resultados = None
-    except Exception:
-        st.warning("Some values could not be processed. Please enter valid numbers (0-100).")
+        # Sync back
+        try:
+            for local_idx, global_idx in enumerate(_grp_indices):
+                if local_idx < len(_grp_df_edited):
+                    _new_weeks = []
+                    for w in range(1, _grp_n_sem + 1):
+                        val = safe_int(_grp_df_edited.iloc[local_idx][f"W{w}"], default=0, min_val=0, max_val=100)
+                        _new_weeks.append(val)
+                    _old_weeks = st.session_state.pacientes_por_semana_tab.get(global_idx, [0] * _grp_n_sem)
+                    if _new_weeks != _old_weeks[:_grp_n_sem]:
+                        st.session_state.pacientes_por_semana_tab[global_idx] = _new_weeks
+                        st.session_state.pacientes_actuales[global_idx] = sum(_new_weeks)
+                        st.session_state.resultados = None
+        except Exception:
+            st.warning("Some values could not be processed. Please enter valid numbers (0-100).")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
