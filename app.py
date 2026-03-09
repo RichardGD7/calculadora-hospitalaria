@@ -619,61 +619,6 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# === STICKY TABS via JS (uses components.html to bypass script sanitization) ===
-import streamlit.components.v1 as _components
-_components.html("""
-<script>
-(function() {
-    function initStickyTabs() {
-        // Access parent document (Streamlit's main document, not the iframe)
-        const doc = window.parent.document;
-        const tabList = doc.querySelector('[data-baseweb="tab-list"]');
-        if (!tabList) { setTimeout(initStickyTabs, 500); return; }
-        if (tabList.dataset.stickyInit) return;
-        tabList.dataset.stickyInit = '1';
-
-        // Create a placeholder to preserve layout when tabs become fixed
-        const placeholder = doc.createElement('div');
-        placeholder.style.display = 'none';
-        tabList.parentElement.insertBefore(placeholder, tabList);
-
-        function handleScroll() {
-            const parent = tabList.parentElement;
-            const rect = placeholder.style.display === 'none'
-                ? tabList.getBoundingClientRect()
-                : placeholder.getBoundingClientRect();
-
-            if (rect.top <= 0) {
-                if (placeholder.style.display === 'none') {
-                    placeholder.style.height = tabList.offsetHeight + 'px';
-                    placeholder.style.display = 'block';
-                }
-                tabList.style.position = 'fixed';
-                tabList.style.top = '0';
-                tabList.style.left = parent.getBoundingClientRect().left + 'px';
-                tabList.style.width = parent.offsetWidth + 'px';
-                tabList.style.zIndex = '999';
-                tabList.style.boxShadow = '0 2px 8px rgba(0,0,0,0.12)';
-            } else {
-                tabList.style.position = '';
-                tabList.style.top = '';
-                tabList.style.left = '';
-                tabList.style.width = '';
-                tabList.style.zIndex = '';
-                tabList.style.boxShadow = '';
-                placeholder.style.display = 'none';
-            }
-        }
-
-        // Listen on scroll with capture to catch all scroll events
-        window.parent.addEventListener('scroll', handleScroll, true);
-        handleScroll();
-    }
-    setTimeout(initStickyTabs, 1500);
-})();
-</script>
-""", height=0)
-
 # === CARGAR DATOS ===
 datos_base = obtener_datos_base()
 
