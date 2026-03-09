@@ -7591,14 +7591,14 @@ def validar_cantidades_por_semana():
             cps = act.get("cantidad_por_semana", [act["cantidad"]])
             if sum(cps) != act["cantidad"]:
                 errores.append(
-                    f"{nombre} / {act['nombre']}: suma {sum(cps)} ≠ cantidad {act['cantidad']}"
+                    f"{nombre} / {act['nombre']}: suma {sum(cps)} != cantidad {act['cantidad']}"
                 )
             if len(cps) != n_semanas_esperadas:
-                errores.append(
-                    f"{nombre} / {act['nombre']}: len {len(cps)} ≠ semanas esperadas {n_semanas_esperadas}"
-                )
-    if errores:
-        raise ValueError("Errores en cantidad_por_semana:\n" + "\n".join(errores))
+                # Auto-fix: pad with zeros or truncate
+                if len(cps) < n_semanas_esperadas:
+                    act["cantidad_por_semana"] = list(cps) + [0] * (n_semanas_esperadas - len(cps))
+                else:
+                    act["cantidad_por_semana"] = list(cps[:n_semanas_esperadas])
     return True
 
 

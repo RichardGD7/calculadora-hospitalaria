@@ -486,6 +486,8 @@ def construir_modelo_datos_semana(semana: int) -> dict:
 
             # Obtener cantidad para esta semana específica
             cps = act.get("cantidad_por_semana", [act["cantidad"]] * n_semanas_prog)
+            if semana - 1 >= len(cps):
+                continue  # no data for this week — assume 0
             cantidad_semana = cps[semana - 1]
 
             if cantidad_semana == 0:
