@@ -1906,6 +1906,8 @@ if st.session_state.admin_mode:
             # ─── SUB-TAB: CREATE NEW PROGRAM ─────────────────
             with subtab_new_prog:
                 st.markdown("##### New Program / Extension")
+                st.info("**Step 1:** Fill in the program details and click **\"Create Program\"** below. "
+                        "Then add activities. Finally, go to the bottom of the page and click **\"Save All Changes\"** to persist.")
                 new_prog_tipo = st.selectbox("Type", options=["programa", "extension"], key="new_prog_tipo")
                 _is_extension = new_prog_tipo == "extension"
                 with st.form("form_new_program", clear_on_submit=True):
@@ -1922,7 +1924,7 @@ if st.session_state.admin_mode:
                         new_prog_dur = st.number_input("Duration (days)", min_value=1, max_value=90, value=7, step=1, key="new_prog_dur")
                     with col_pp:
                         new_prog_pri = st.number_input("Priority", min_value=1, max_value=100, value=5, step=1, key="new_prog_pri")
-                    submitted_prog = st.form_submit_button("Create Program")
+                    submitted_prog = st.form_submit_button("➕ Create Program", type="primary")
 
                     if submitted_prog:
                         prog_name_clean = safe_string(new_prog_name, default="").strip()
@@ -2343,7 +2345,21 @@ if st.session_state.admin_mode:
                             st.session_state[confirm_key] = False
                             st.rerun()
 
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("---")
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%); border: 2px solid #3B82F6; border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 1.5rem;">💾</span>
+                <div>
+                    <strong style="color: #1E40AF;">Persist All Changes</strong><br>
+                    <span style="color: #1E3A5F; font-size: 0.9rem;">
+                        Use the button below to permanently save <strong>all</strong> modifications
+                        (catalog, programs, resources) to the database file.
+                    </span>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
         # === BOTÓN GUARDAR CON CONFIRMACIÓN ===
         if "confirmar_guardado" not in st.session_state:
