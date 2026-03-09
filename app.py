@@ -1895,8 +1895,165 @@ if st.session_state.admin_mode:
                             if new_prog_tipo == "extension":
                                 new_prog_data["programa_base"] = new_prog_base
                             st.session_state.admin_programas[prog_name_clean] = new_prog_data
-                            st.success(f"Program '{prog_name_clean}' created. Go to 'Edit Existing Program' to add activities.")
+                            st.session_state.newly_created_program = prog_name_clean
                             st.rerun()
+
+                # ── Activity editor for newly created program ──
+                _new_prog_name = st.session_state.get("newly_created_program")
+                if _new_prog_name and _new_prog_name in st.session_state.admin_programas:
+                    _new_prog = st.session_state.admin_programas[_new_prog_name]
+                    st.success(f"Program '{_new_prog_name}' created. Add activities below.")
+                    st.markdown(f"##### Activities for {_new_prog_name}")
+
+                    _np_n_semanas = max(_new_prog["duracion_dias"] // 7, 1)
+                    _np_is_multi = _np_n_semanas > 1
+
+                    if _np_is_multi:
+                        st.caption("Quantity and weekly distribution (W1, W2...) are editable. The sum of weeks must equal Quantity.")
+                    else:
+                        st.caption("Only Quantity is editable. Type, duration, and resources are inherited from the catalog.")
+
+                    _np_cat_lookup = {a["nombre"]: a for a in st.session_state.admin_catalogo}
+
+                    # Pre-render sync for the new program editor
+                    _np_editor_key = f"editor_actividades_new_{_new_prog_name}"
+                    if _np_editor_key in st.session_state:
+                        _np_ed_data = st.session_state[_np_editor_key]
+                        if "edited_rows" in _np_ed_data and _np_ed_data["edited_rows"]:
+                            for _row_idx_str, _changes in _np_ed_data["edited_rows"].items():
+                                _row_idx = int(_row_idx_str)
+                                if _row_idx < len(_new_prog["actividades"]):
+                                    _act_ref = _new_prog["actividades"][_row_idx]
+                                    if "Quantity" in _changes:
+                                        _act_ref["cantidad"] = safe_int(_changes["Quantity"], default=1, min_val=0)
+                                    if _np_is_multi:
+                                        _new_cps = list(_act_ref.get("cantidad_por_semana", [_act_ref["cantidad"]] + [0] * (_np_n_semanas - 1)))
+                                        while len(_new_cps) < _np_n_semanas:
+                                            _new_cps.append(0)
+                                        for _w in range(1, _np_n_semanas + 1):
+                                            if f"W{_w}" in _changes:
+                                                _new_cps[_w - 1] = safe_int(_changes[f"W{_w}"], default=0, min_val=0)
+                                        _act_ref["cantidad_por_semana"] = _new_cps
+                                    else:
+                                        _act_ref["cantidad_por_semana"] = [_act_ref["cantidad"]]
+                        del st.session_state[_np_editor_key]
+
+                    if _new_prog["actividades"]:
+                        _np_rows = []
+                        for act in _new_prog["actividades"]:
+                            _np_row = {
+                                "Activity": act["nombre"],
+                                "Type": _np_cat_lookup.get(act["nombre"], act).get("tipo", act.get("tipo", "")),
+                                "Quantity": act["cantidad"],
+                            }
+                            if _np_is_multi:
+                                cps = act.get("cantidad_por_semana", [act["cantidad"]] + [0] * (_np_n_semanas - 1))
+                                while len(cps) < _np_n_semanas:
+                                    cps.append(0)
+                                for w in range(1, _np_n_semanas + 1):
+                                    _np_row[f"W{w}"] = cps[w - 1]
+                            _np_row["Duration (min)"] = _np_cat_lookup.get(act["nombre"], act).get("duracion_min", act.get("duracion_min", 0))
+                            _np_row["Prof. Resources"] = ", ".join(_np_cat_lookup.get(act["nombre"], act).get("recursos_prof", []))
+                            _np_row["Phys. Resource"] = _np_cat_lookup.get(act["nombre"], act).get("recurso_fis", "") or "-"
+                            _np_rows.append(_np_row)
+
+                        _np_df = pd.DataFrame(_np_rows)
+
+                        _np_col_config = {
+                            "Activity": st.column_config.TextColumn("Activity", disabled=True, width="large"),
+                            "Type": st.column_config.TextColumn("Type", disabled=True, width="small"),
+                            "Quantity": st.column_config.NumberColumn("Qty", min_value=0, max_value=100, step=1, format="%d"),
+                        }
+                        if _np_is_multi:
+                            for w in range(1, _np_n_semanas + 1):
+                                _np_col_config[f"W{w}"] = st.column_config.NumberColumn(
+                                    f"W{w}", min_value=0, max_value=100, step=1, format="%d",
+                                    help=f"Quantity assigned to week {w}",
+                                )
+                        _np_col_config["Duration (min)"] = st.column_config.NumberColumn("Duration", disabled=True, format="%d")
+                        _np_col_config["Prof. Resources"] = st.column_config.TextColumn("Prof. Resources", disabled=True, width="medium")
+                        _np_col_config["Phys. Resource"] = st.column_config.TextColumn("Phys. Resource", disabled=True, width="medium")
+
+                        _np_df_edited = st.data_editor(
+                            _np_df,
+                            column_config=_np_col_config,
+                            hide_index=True, use_container_width=True, num_rows="fixed",
+                            key=_np_editor_key,
+                        )
+
+                        # Sync back quantity and weekly distribution
+                        _np_week_warnings = []
+                        for i, row in _np_df_edited.iterrows():
+                            act_ref = _new_prog["actividades"][i]
+                            new_qty = safe_int(row["Quantity"], default=1, min_val=0)
+                            act_ref["cantidad"] = new_qty
+                            if _np_is_multi:
+                                new_cps = [safe_int(row[f"W{w}"], default=0, min_val=0) for w in range(1, _np_n_semanas + 1)]
+                                week_sum = sum(new_cps)
+                                if week_sum != new_qty and new_qty > 0:
+                                    _np_week_warnings.append(f"**{act_ref['nombre']}**: W1+W2{'+ W3' if _np_n_semanas == 3 else ''} = {week_sum}, Qty = {new_qty}")
+                                act_ref["cantidad_por_semana"] = new_cps
+                            else:
+                                act_ref["cantidad_por_semana"] = [new_qty]
+
+                        if _np_week_warnings:
+                            st.warning("Weekly distribution does not match total Quantity for:\n\n" + "\n\n".join(_np_week_warnings))
+                    else:
+                        st.info("No activities yet. Add one below.")
+
+                    st.markdown("<br>", unsafe_allow_html=True)
+
+                    # ── Add activity from catalog ──
+                    st.markdown("**Add Activity from Catalog**")
+                    _np_existing = {a["nombre"] for a in _new_prog["actividades"]}
+                    _np_available = sorted([a["nombre"] for a in st.session_state.admin_catalogo if a["nombre"] not in _np_existing])
+
+                    if _np_available:
+                        col_np_act, col_np_qty, col_np_btn = st.columns([3, 1, 1])
+                        with col_np_act:
+                            _np_add_name = st.selectbox("Activity", options=_np_available, key=f"np_add_act_{_new_prog_name}")
+                        with col_np_qty:
+                            _np_add_qty = st.number_input("Quantity", min_value=1, max_value=100, value=1, step=1, key=f"np_add_qty_{_new_prog_name}")
+                        with col_np_btn:
+                            st.markdown("<br>", unsafe_allow_html=True)
+                            if st.button("Add", key=f"np_btn_add_{_new_prog_name}", type="primary"):
+                                _np_canon = _np_cat_lookup.get(_np_add_name, {})
+                                _np_qty = safe_int(_np_add_qty, default=1, min_val=1)
+                                _np_cps = [_np_qty] + [0] * (_np_n_semanas - 1)
+                                _new_prog["actividades"].append({
+                                    "nombre": _np_add_name,
+                                    "tipo": _np_canon.get("tipo", "Otro"),
+                                    "cantidad": _np_qty,
+                                    "duracion_min": _np_canon.get("duracion_min", 30),
+                                    "recursos_prof": list(_np_canon.get("recursos_prof", [])),
+                                    "recurso_fis": _np_canon.get("recurso_fis"),
+                                    "cantidad_por_semana": _np_cps,
+                                })
+                                st.rerun()
+                    else:
+                        st.caption("All catalog activities are already in this program.")
+
+                    st.markdown("<br>", unsafe_allow_html=True)
+
+                    # ── Remove activity ──
+                    if _new_prog["actividades"]:
+                        st.markdown("**Remove Activity**")
+                        _np_rem_options = [a["nombre"] for a in _new_prog["actividades"]]
+                        col_np_rem, col_np_rem_btn = st.columns([3, 1])
+                        with col_np_rem:
+                            _np_rem_act = st.selectbox("Activity to remove", options=_np_rem_options, key=f"np_rem_act_{_new_prog_name}")
+                        with col_np_rem_btn:
+                            st.markdown("<br>", unsafe_allow_html=True)
+                            if st.button("Remove", key=f"np_btn_rem_{_new_prog_name}"):
+                                _new_prog["actividades"] = [a for a in _new_prog["actividades"] if a["nombre"] != _np_rem_act]
+                                st.rerun()
+
+                    st.markdown("<br>", unsafe_allow_html=True)
+
+                    # ── Done button — clear newly created state ──
+                    if st.button("Done — go to Edit tab for further changes", key="np_done_btn"):
+                        del st.session_state["newly_created_program"]
+                        st.rerun()
 
             # ─── SUB-TAB: EDIT EXISTING PROGRAM ──────────────
             with subtab_edit_prog:
