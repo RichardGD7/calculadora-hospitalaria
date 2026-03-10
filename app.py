@@ -1763,6 +1763,35 @@ if st.session_state.admin_mode:
                     st.session_state.admin_recursos_prof[i]["cap_semanal_por_persona"]
                 )
 
+            # ── Add new professional resource ──
+            with st.expander("➕ Add New Professional Resource"):
+                with st.form("form_new_rec_prof", clear_on_submit=True):
+                    _nrp_col1, _nrp_col2 = st.columns(2)
+                    with _nrp_col1:
+                        _nrp_dept = st.text_input("Department", key="nrp_dept")
+                        _nrp_name = st.text_input("Role Name", key="nrp_name")
+                    with _nrp_col2:
+                        _nrp_people = st.number_input("Number of People", min_value=1, max_value=100, value=1, step=1, key="nrp_people")
+                        _nrp_cap = st.number_input("Capacity/Person (h/week)", min_value=0.0, max_value=200.0, value=40.0, step=0.5, key="nrp_cap")
+                    _nrp_submit = st.form_submit_button("Add Professional Resource", type="primary")
+                    if _nrp_submit:
+                        _nrp_dept_clean = safe_string(_nrp_dept, default="").strip()
+                        _nrp_name_clean = safe_string(_nrp_name, default="").strip()
+                        if not _nrp_dept_clean or not _nrp_name_clean:
+                            st.error("Department and Role Name are required.")
+                        elif any(r["nombre"] == _nrp_name_clean for r in st.session_state.admin_recursos_prof):
+                            st.error(f"Professional resource '{_nrp_name_clean}' already exists.")
+                        else:
+                            _nrp_total = safe_int(_nrp_people, default=1, min_val=1) * safe_float(_nrp_cap, default=40.0, min_val=0.0)
+                            st.session_state.admin_recursos_prof.append({
+                                "departamento": _nrp_dept_clean,
+                                "nombre": _nrp_name_clean,
+                                "num_personas": safe_int(_nrp_people, default=1, min_val=1),
+                                "cap_semanal_por_persona": safe_float(_nrp_cap, default=40.0, min_val=0.0),
+                                "cap_semanal_total": _nrp_total,
+                            })
+                            st.rerun()
+
             st.markdown("<br>", unsafe_allow_html=True)
 
             st.markdown("#### Physical Resources")
@@ -1799,6 +1828,35 @@ if st.session_state.admin_mode:
                     st.session_state.admin_recursos_fis[i]["num_unidades"] *
                     st.session_state.admin_recursos_fis[i]["cap_semanal_por_unidad"]
                 )
+
+            # ── Add new physical resource ──
+            with st.expander("➕ Add New Physical Resource"):
+                with st.form("form_new_rec_fis", clear_on_submit=True):
+                    _nrf_col1, _nrf_col2 = st.columns(2)
+                    with _nrf_col1:
+                        _nrf_dept = st.text_input("Department", key="nrf_dept")
+                        _nrf_name = st.text_input("Resource Name", key="nrf_name")
+                    with _nrf_col2:
+                        _nrf_units = st.number_input("Number of Units", min_value=1, max_value=100, value=1, step=1, key="nrf_units")
+                        _nrf_cap = st.number_input("Capacity/Unit (h/week)", min_value=0.0, max_value=500.0, value=40.0, step=0.5, key="nrf_cap")
+                    _nrf_submit = st.form_submit_button("Add Physical Resource", type="primary")
+                    if _nrf_submit:
+                        _nrf_dept_clean = safe_string(_nrf_dept, default="").strip()
+                        _nrf_name_clean = safe_string(_nrf_name, default="").strip()
+                        if not _nrf_dept_clean or not _nrf_name_clean:
+                            st.error("Department and Resource Name are required.")
+                        elif any(r["nombre"] == _nrf_name_clean for r in st.session_state.admin_recursos_fis):
+                            st.error(f"Physical resource '{_nrf_name_clean}' already exists.")
+                        else:
+                            _nrf_total = safe_int(_nrf_units, default=1, min_val=1) * safe_float(_nrf_cap, default=40.0, min_val=0.0)
+                            st.session_state.admin_recursos_fis.append({
+                                "departamento": _nrf_dept_clean,
+                                "nombre": _nrf_name_clean,
+                                "num_unidades": safe_int(_nrf_units, default=1, min_val=1),
+                                "cap_semanal_por_unidad": safe_float(_nrf_cap, default=40.0, min_val=0.0),
+                                "cap_semanal_total": _nrf_total,
+                            })
+                            st.rerun()
 
         # ─────────────────────────────────────────────────
         # SUB-TAB 2: ACTIVIDADES (CATÁLOGO)
