@@ -1764,21 +1764,22 @@ if st.session_state.admin_mode:
                 )
 
             # ── Add new professional resource ──
+            _prof_depts = sorted(set(r["departamento"] for r in st.session_state.admin_recursos_prof))
             with st.expander("➕ Add New Professional Resource"):
                 with st.form("form_new_rec_prof", clear_on_submit=True):
                     _nrp_col1, _nrp_col2 = st.columns(2)
                     with _nrp_col1:
-                        _nrp_dept = st.text_input("Department", key="nrp_dept")
+                        _nrp_dept = st.selectbox("Department", options=_prof_depts, key="nrp_dept")
                         _nrp_name = st.text_input("Role Name", key="nrp_name")
                     with _nrp_col2:
                         _nrp_people = st.number_input("Number of People", min_value=1, max_value=100, value=1, step=1, key="nrp_people")
                         _nrp_cap = st.number_input("Capacity/Person (h/week)", min_value=0.0, max_value=200.0, value=40.0, step=0.5, key="nrp_cap")
                     _nrp_submit = st.form_submit_button("Add Professional Resource", type="primary")
                     if _nrp_submit:
-                        _nrp_dept_clean = safe_string(_nrp_dept, default="").strip()
+                        _nrp_dept_clean = _nrp_dept
                         _nrp_name_clean = safe_string(_nrp_name, default="").strip()
-                        if not _nrp_dept_clean or not _nrp_name_clean:
-                            st.error("Department and Role Name are required.")
+                        if not _nrp_name_clean:
+                            st.error("Role Name is required.")
                         elif any(r["nombre"] == _nrp_name_clean for r in st.session_state.admin_recursos_prof):
                             st.error(f"Professional resource '{_nrp_name_clean}' already exists.")
                         else:
@@ -1830,21 +1831,22 @@ if st.session_state.admin_mode:
                 )
 
             # ── Add new physical resource ──
+            _fis_depts = sorted(set(r["departamento"] for r in st.session_state.admin_recursos_fis))
             with st.expander("➕ Add New Physical Resource"):
                 with st.form("form_new_rec_fis", clear_on_submit=True):
                     _nrf_col1, _nrf_col2 = st.columns(2)
                     with _nrf_col1:
-                        _nrf_dept = st.text_input("Department", key="nrf_dept")
+                        _nrf_dept = st.selectbox("Department", options=_fis_depts, key="nrf_dept")
                         _nrf_name = st.text_input("Resource Name", key="nrf_name")
                     with _nrf_col2:
                         _nrf_units = st.number_input("Number of Units", min_value=1, max_value=100, value=1, step=1, key="nrf_units")
                         _nrf_cap = st.number_input("Capacity/Unit (h/week)", min_value=0.0, max_value=500.0, value=40.0, step=0.5, key="nrf_cap")
                     _nrf_submit = st.form_submit_button("Add Physical Resource", type="primary")
                     if _nrf_submit:
-                        _nrf_dept_clean = safe_string(_nrf_dept, default="").strip()
+                        _nrf_dept_clean = _nrf_dept
                         _nrf_name_clean = safe_string(_nrf_name, default="").strip()
-                        if not _nrf_dept_clean or not _nrf_name_clean:
-                            st.error("Department and Resource Name are required.")
+                        if not _nrf_name_clean:
+                            st.error("Resource Name is required.")
                         elif any(r["nombre"] == _nrf_name_clean for r in st.session_state.admin_recursos_fis):
                             st.error(f"Physical resource '{_nrf_name_clean}' already exists.")
                         else:
