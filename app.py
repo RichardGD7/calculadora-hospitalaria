@@ -1939,7 +1939,7 @@ if st.session_state.admin_mode:
             # ─── SUB-TAB: CREATE NEW PROGRAM ─────────────────
             with subtab_new_prog:
                 st.markdown("##### New Program / Extension")
-                st.info("**Step 1:** Fill in the program details and click **\"Create Program\"** below. "
+                st.info("**Instructions:** Fill in the program details and click **\"Create Program\"** below. "
                         "Then add activities. Finally, go to the bottom of the page and click **\"Save All Changes\"** to persist.")
                 new_prog_tipo = st.selectbox("Type", options=["programa", "extension"], key="new_prog_tipo")
                 _is_extension = new_prog_tipo == "extension"
