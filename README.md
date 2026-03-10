@@ -1,6 +1,6 @@
 # Documento Técnico — Calculadora de Capacidad Sanoviv
 
-**Versión:** 1.4
+**Versión:** 1.5
 **Fecha:** Marzo 2026
 **Desarrollado por:** Arkode
 
@@ -38,7 +38,7 @@ La aplicación no almacena datos de pacientes individuales ni información perso
 
 ```
 calculadora-hospitalaria/
-├── app.py                  # Interfaz de usuario (Streamlit) — 2,508 líneas
+├── app.py                  # Interfaz de usuario (Streamlit) — 2,558 líneas
 ├── optimizador_v2.py       # Motor de optimización ILP — 658 líneas
 ├── BD_sanoviv.py           # Base de datos (archivo Python) — 7,605 líneas
 ├── sanoviv logo.jpg        # Logo de Sanoviv (incrustado en header vía base64)
@@ -79,7 +79,7 @@ Contiene la lógica de cálculo sin interfaz visual:
 
 ### 3.3 app.py — Interfaz de Usuario
 
-Aplicación Streamlit con header que incluye logo de Sanoviv (cargado vía base64 desde `sanoviv logo.jpg`) y pestañas sticky que permanecen visibles al hacer scroll. Pestañas en orden de aparición:
+Aplicación Streamlit con header compacto que incluye logo de Sanoviv (cargado vía base64 desde `sanoviv logo.jpg`) con degradado azul→blanco. Pestañas en orden de aparición:
 
 | Pestaña | Función |
 |---|---|
@@ -87,7 +87,7 @@ Aplicación Streamlit con header que incluye logo de Sanoviv (cargado vía base6
 | Resources | Uso real de recursos calculado con consumo específico por semana, independiente del optimizador |
 | Verify Admission | Verificación de factibilidad para admitir nuevos pacientes (siempre en semana 1) |
 | Optimization Results | Resultados del optimizador basado en promedios semanales (con banner de advertencia) |
-| Administration | Gestión de programas, actividades y recursos (requiere contraseña). Incluye guía paso a paso para crear programas. Campo "Base Program" se deshabilita automáticamente para programas no-extensión |
+| Administration | Gestión de programas, actividades y recursos (requiere contraseña). Incluye guía paso a paso para crear programas, formularios para agregar recursos nuevos (profesionales y físicos) con departamento seleccionable, y CRUD de actividades. Campo "Base Program" se deshabilita automáticamente para programas no-extensión |
 
 ---
 
