@@ -2130,12 +2130,6 @@ if st.session_state.admin_mode:
                                 _new_prog["actividades"] = [a for a in _new_prog["actividades"] if a["nombre"] != _np_rem_act]
                                 st.rerun()
 
-                    st.markdown("<br>", unsafe_allow_html=True)
-
-                    # ── Done button — clear newly created state ──
-                    if st.button("Done — go to Edit tab for further changes", key="np_done_btn"):
-                        del st.session_state["newly_created_program"]
-                        st.rerun()
 
             # ─── SUB-TAB: EDIT EXISTING PROGRAM ──────────────
             with subtab_edit_prog:
