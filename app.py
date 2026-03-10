@@ -1966,7 +1966,7 @@ if st.session_state.admin_mode:
                     new_act_dur = st.number_input("Duration (min)", min_value=1, max_value=1440, value=30, step=5, key="new_act_dur")
                 new_act_prof = st.multiselect("Professional Resources", options=recursos_prof_validos, key="new_act_prof")
                 new_act_fis = st.selectbox("Physical Resource", options=["(None)"] + recursos_fis_validos, key="new_act_fis")
-                submitted_act = st.form_submit_button("Add Activity")
+                submitted_act = st.form_submit_button("➕ Add Activity", type="primary")
 
                 if submitted_act:
                     act_name_clean = safe_string(new_act_name, default="").strip()
