@@ -2475,13 +2475,12 @@ if st.session_state.admin_mode:
         </div>
         """, unsafe_allow_html=True)
 
-        # === BOTÓN GUARDAR CON CONFIRMACIÓN ===
-        if "confirmar_guardado" not in st.session_state:
-            st.session_state.confirmar_guardado = False
-
-        # Mostrar feedback de un guardado previo. El guardado se ejecuta dentro
-        # de un callback on_click (que dispara al primer clic, ya con los edits
-        # del data_editor commiteados), y el resultado se muestra tras el rerun.
+        # === BOTÓN GUARDAR (un solo clic) ===
+        # El guardado corre en un callback on_click: dispara al PRIMER clic, ya
+        # con las ediciones de los data_editor commiteadas. El resultado se
+        # guarda en session_state y se muestra tras el rerun (success/warning/
+        # error + globos). Se quitó la confirmación de dos botones porque ese
+        # segundo paso era el que arrastraba el problema del doble clic.
         _fb = st.session_state.pop("_save_feedback", None)
         if _fb:
             _fb_tipo, _fb_msg = _fb
@@ -2495,8 +2494,8 @@ if st.session_state.admin_mode:
         for _err in st.session_state.pop("_save_errors", []):
             st.error(_err)
 
-        def _solicitar_confirmacion():
-            """Valida y, si todo está bien, abre el diálogo de confirmación."""
+        def _guardar_todo():
+            """Valida y guarda todo: archivo (in-session) + Supabase (durable)."""
             is_valid, validation_errors = validate_before_save(
                 st.session_state.admin_programas,
                 st.session_state.admin_catalogo,
@@ -2505,12 +2504,7 @@ if st.session_state.admin_mode:
             )
             if not is_valid:
                 st.session_state._save_errors = validation_errors
-                st.session_state.confirmar_guardado = False
-            else:
-                st.session_state.confirmar_guardado = True
-
-        def _ejecutar_guardado():
-            """Guarda todo: archivo (in-session) + Supabase (durable)."""
+                return
             try:
                 guardar_datos_sanoviv(
                     st.session_state.admin_programas,
@@ -2565,41 +2559,18 @@ if st.session_state.admin_mode:
                             st.session_state.pacientes_por_semana_tab[_i] = [0] * _n_s
             except Exception as e:
                 st.session_state._save_feedback = ("error", f"Error saving changes: {str(e)}")
-            finally:
-                st.session_state.confirmar_guardado = False
 
-        @st.dialog("Confirm Save")
-        def _dialogo_confirmar_guardado():
-            st.markdown(
-                "You are about to permanently save changes to the activity catalog, "
-                "treatment programs, professional resources, and physical resources.\n\n"
-                "**This action cannot be undone.** Are you sure you want to continue?"
-            )
-            _dc1, _dc2 = st.columns(2)
-            with _dc1:
-                # Dentro del modal no hay data_editor compitiendo por el clic,
-                # así que el botón responde al primer toque.
-                if st.button("Yes, Save Changes", type="primary",
-                             use_container_width=True, key="dlg_yes_save"):
-                    _ejecutar_guardado()
-                    st.rerun()
-            with _dc2:
-                if st.button("Cancel", use_container_width=True, key="dlg_cancel_save"):
-                    st.session_state.confirmar_guardado = False
-                    st.rerun()
-
+        st.warning(
+            "⚠️ Saving overwrites the stored data with your current edits and cannot be undone."
+        )
         col_save1, col_save2, col_save3 = st.columns([1, 2, 1])
         with col_save2:
             st.button(
                 "Save All Changes",
                 type="primary",
                 use_container_width=True,
-                on_click=_solicitar_confirmacion,
+                on_click=_guardar_todo,
             )
-
-        # Abrir el modal de confirmación cuando la validación pasó.
-        if st.session_state.confirmar_guardado:
-            _dialogo_confirmar_guardado()
 
         st.markdown("<br>", unsafe_allow_html=True)
         st.info(
