@@ -30,8 +30,12 @@ _TIMEOUT = 10
 def _creds():
     """Lee SUPABASE_URL y SUPABASE_KEY de st.secrets. (None, None) si faltan."""
     try:
-        url = st.secrets["SUPABASE_URL"].rstrip("/")
-        key = st.secrets["SUPABASE_KEY"]
+        url = st.secrets["SUPABASE_URL"].strip().rstrip("/")
+        # Tolerar que peguen la URL con el sufijo de la API REST: lo quitamos
+        # porque el código ya agrega /rest/v1 al construir cada endpoint.
+        if url.endswith("/rest/v1"):
+            url = url[: -len("/rest/v1")]
+        key = st.secrets["SUPABASE_KEY"].strip()
         return url, key
     except Exception:
         return None, None
