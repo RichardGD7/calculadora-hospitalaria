@@ -2479,29 +2479,105 @@ if st.session_state.admin_mode:
         if "confirmar_guardado" not in st.session_state:
             st.session_state.confirmar_guardado = False
 
+        # Mostrar feedback de un guardado previo. El guardado se ejecuta dentro
+        # de un callback on_click (que dispara al primer clic, ya con los edits
+        # del data_editor commiteados), y el resultado se muestra tras el rerun.
+        _fb = st.session_state.pop("_save_feedback", None)
+        if _fb:
+            _fb_tipo, _fb_msg = _fb
+            if _fb_tipo == "success":
+                st.success(_fb_msg)
+                st.balloons()
+            elif _fb_tipo == "warning":
+                st.warning(_fb_msg)
+            else:
+                st.error(_fb_msg)
+        for _err in st.session_state.pop("_save_errors", []):
+            st.error(_err)
+
+        def _solicitar_confirmacion():
+            """Valida y, si todo está bien, abre el diálogo de confirmación."""
+            is_valid, validation_errors = validate_before_save(
+                st.session_state.admin_programas,
+                st.session_state.admin_catalogo,
+                st.session_state.admin_recursos_prof,
+                st.session_state.admin_recursos_fis,
+            )
+            if not is_valid:
+                st.session_state._save_errors = validation_errors
+                st.session_state.confirmar_guardado = False
+            else:
+                st.session_state.confirmar_guardado = True
+
+        def _ejecutar_guardado():
+            """Guarda todo: archivo (in-session) + Supabase (durable)."""
+            try:
+                guardar_datos_sanoviv(
+                    st.session_state.admin_programas,
+                    st.session_state.admin_recursos_prof,
+                    st.session_state.admin_recursos_fis,
+                    st.session_state.admin_catalogo,
+                )
+                # Hot-reload BD_sanoviv
+                importlib.reload(datos)
+                # Persistencia durable (Supabase) — parche temporal. Guarda el
+                # snapshot canónico ya hidratado/validado, para que al reiniciar
+                # la app cargue exactamente este estado.
+                if persistencia.esta_configurado():
+                    _ok = persistencia.guardar_overrides({
+                        "programas":              datos.programas,
+                        "recursos_profesionales": datos.recursos_profesionales,
+                        "recursos_fisicos":       datos.recursos_fisicos,
+                        "catalogo_actividades":   datos.catalogo_actividades,
+                    })
+                    persistencia.limpiar_cache()
+                    if _ok:
+                        st.session_state._save_feedback = (
+                            "success",
+                            "Changes saved successfully and persisted. The data has been reloaded.",
+                        )
+                    else:
+                        st.session_state._save_feedback = (
+                            "warning",
+                            "Los cambios se aplicaron en esta sesión, pero NO se pudieron "
+                            "guardar de forma permanente (Supabase no respondió). Se perderán "
+                            "al reiniciarse la app. Revisa la conexión e inténtalo de nuevo.",
+                        )
+                else:
+                    st.session_state._save_feedback = (
+                        "warning",
+                        "Persistencia no configurada: los cambios se aplicaron en esta sesión "
+                        "pero NO son permanentes. Define SUPABASE_URL y SUPABASE_KEY en los secrets.",
+                    )
+                # Limpiar datos de admin para recargar desde archivo
+                for key in ["admin_programas", "admin_recursos_prof", "admin_recursos_fis", "admin_catalogo"]:
+                    st.session_state.pop(key, None)
+                # Reset pacientes_actuales if program count changed
+                new_n = len(datos.programas)
+                if "pacientes_actuales" in st.session_state:
+                    old_n = len(st.session_state.pacientes_actuales)
+                    if old_n != new_n:
+                        st.session_state.pacientes_actuales = [0] * new_n
+                        _new_datos_base = obtener_datos_base()
+                        st.session_state.pacientes_por_semana_tab = {}
+                        for _i, _nom in enumerate(_new_datos_base["nombre_programas"]):
+                            _n_s = -(-_new_datos_base["duraciones_dias"][_nom] // 7)
+                            st.session_state.pacientes_por_semana_tab[_i] = [0] * _n_s
+            except Exception as e:
+                st.session_state._save_feedback = ("error", f"Error saving changes: {str(e)}")
+            finally:
+                st.session_state.confirmar_guardado = False
+
         col_save1, col_save2, col_save3 = st.columns([1, 2, 1])
 
         if not st.session_state.confirmar_guardado:
             with col_save2:
-                guardar_btn = st.button(
+                st.button(
                     "Save All Changes",
                     type="primary",
                     use_container_width=True,
+                    on_click=_solicitar_confirmacion,
                 )
-            if guardar_btn:
-                # Validate before showing confirmation
-                is_valid, validation_errors = validate_before_save(
-                    st.session_state.admin_programas,
-                    st.session_state.admin_catalogo,
-                    st.session_state.admin_recursos_prof,
-                    st.session_state.admin_recursos_fis,
-                )
-                if not is_valid:
-                    for err in validation_errors:
-                        st.error(err)
-                else:
-                    st.session_state.confirmar_guardado = True
-                    st.rerun()
         else:
             st.markdown("""
             <div style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border: 2px solid #F59E0B; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem;">
@@ -2522,76 +2598,19 @@ if st.session_state.admin_mode:
             col_confirm, col_cancel = st.columns(2)
 
             with col_confirm:
-                confirmar_btn = st.button(
+                st.button(
                     "Yes, Save Changes",
                     type="primary",
                     use_container_width=True,
+                    on_click=_ejecutar_guardado,
                 )
 
             with col_cancel:
-                cancelar_btn = st.button(
+                st.button(
                     "Cancel",
                     use_container_width=True,
+                    on_click=lambda: st.session_state.update(confirmar_guardado=False),
                 )
-
-            if confirmar_btn:
-                with st.spinner("Saving changes..."):
-                    try:
-                        guardar_datos_sanoviv(
-                            st.session_state.admin_programas,
-                            st.session_state.admin_recursos_prof,
-                            st.session_state.admin_recursos_fis,
-                            st.session_state.admin_catalogo,
-                        )
-                        st.session_state.confirmar_guardado = False
-                        # Hot-reload BD_sanoviv
-                        importlib.reload(datos)
-                        # Persistencia durable (Supabase) — parche temporal.
-                        # Guarda el snapshot canónico ya hidratado/validado, para
-                        # que al reiniciar la app cargue exactamente este estado.
-                        if persistencia.esta_configurado():
-                            _ok = persistencia.guardar_overrides({
-                                "programas":              datos.programas,
-                                "recursos_profesionales": datos.recursos_profesionales,
-                                "recursos_fisicos":       datos.recursos_fisicos,
-                                "catalogo_actividades":   datos.catalogo_actividades,
-                            })
-                            persistencia.limpiar_cache()
-                            if not _ok:
-                                st.warning(
-                                    "Los cambios se aplicaron en esta sesión, pero NO se pudieron "
-                                    "guardar de forma permanente (Supabase no respondió). Se perderán "
-                                    "al reiniciarse la app. Revisa la conexión e inténtalo de nuevo."
-                                )
-                        else:
-                            st.warning(
-                                "Persistencia no configurada: los cambios se aplicaron en esta sesión "
-                                "pero NO son permanentes. Define SUPABASE_URL y SUPABASE_KEY en los secrets."
-                            )
-                        # Limpiar datos de admin para recargar desde archivo
-                        for key in ["admin_programas", "admin_recursos_prof", "admin_recursos_fis", "admin_catalogo"]:
-                            if key in st.session_state:
-                                del st.session_state[key]
-                        # Reset pacientes_actuales if program count changed
-                        new_n = len(datos.programas)
-                        if "pacientes_actuales" in st.session_state:
-                            old_n = len(st.session_state.pacientes_actuales)
-                            if old_n != new_n:
-                                st.session_state.pacientes_actuales = [0] * new_n
-                                _new_datos_base = obtener_datos_base()
-                                st.session_state.pacientes_por_semana_tab = {}
-                                for _i, _nom in enumerate(_new_datos_base["nombre_programas"]):
-                                    _n_s = -(-_new_datos_base["duraciones_dias"][_nom] // 7)
-                                    st.session_state.pacientes_por_semana_tab[_i] = [0] * _n_s
-                        st.success("Changes saved successfully. The data has been reloaded.")
-                        st.balloons()
-                    except Exception as e:
-                        st.error(f"Error saving changes: {str(e)}")
-                        st.session_state.confirmar_guardado = False
-
-            if cancelar_btn:
-                st.session_state.confirmar_guardado = False
-                st.rerun()
 
         st.markdown("<br>", unsafe_allow_html=True)
         st.info(
