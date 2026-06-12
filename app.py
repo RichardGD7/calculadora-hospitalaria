@@ -1724,6 +1724,16 @@ if st.session_state.admin_mode:
             "and the activity catalog. Changes will be saved permanently to the system."
         )
 
+        # === Diagnóstico de persistencia (Supabase) ===
+        with st.expander("🔌 Persistence connection (Supabase)"):
+            if st.button("Test connection"):
+                _diag = persistencia.diagnostico()
+                if str(_diag.get("resultado", "")).startswith("OK"):
+                    st.success(_diag["resultado"])
+                else:
+                    st.error(_diag.get("resultado", "Unknown error"))
+                st.json(_diag)
+
         # Inicializar datos editables en session_state si no existen
         if "admin_programas" not in st.session_state:
             st.session_state.admin_programas = copy.deepcopy(datos_base["programas"])

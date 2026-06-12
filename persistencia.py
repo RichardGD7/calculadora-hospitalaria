@@ -113,6 +113,57 @@ def guardar_overrides(data: dict) -> bool:
         return False
 
 
+def diagnostico() -> dict:
+    """Prueba la conexión en vivo y devuelve detalles para depurar.
+
+    No se traga el error: reporta código HTTP / mensaje de Supabase para
+    identificar exactamente qué está mal en las credenciales o la tabla.
+    """
+    url, key = _creds()
+    out = {
+        "configurado": esta_configurado(),
+        "url_presente": bool(url),
+        "key_presente": bool(key),
+        "url_host": (url.split("//")[-1] if url else "(falta)"),
+        "key_prefijo": (key[:8] + "…" if key else "(falta)"),
+        "key_tipo": _adivinar_tipo_key(key),
+    }
+    if not (url and key):
+        out["resultado"] = "ERROR: faltan SUPABASE_URL y/o SUPABASE_KEY en los secrets."
+        return out
+    try:
+        resp = requests.get(
+            f"{url}/rest/v1/{TABLA}",
+            params={"id": "eq.1", "select": "data"},
+            headers=_headers(key),
+            timeout=_TIMEOUT,
+        )
+        out["http_status"] = resp.status_code
+        if resp.status_code == 200:
+            out["resultado"] = "OK: conexión y tabla correctas."
+            out["filas_existentes"] = len(resp.json())
+        else:
+            out["resultado"] = f"ERROR HTTP {resp.status_code}"
+            out["detalle"] = resp.text[:500]
+    except Exception as e:
+        out["resultado"] = "ERROR de red/excepción"
+        out["detalle"] = f"{type(e).__name__}: {e}"
+    return out
+
+
+def _adivinar_tipo_key(key) -> str:
+    """Heurística para detectar si copiaron la key correcta."""
+    if not key:
+        return "(falta)"
+    if key.startswith("sb_secret_"):
+        return "secret key (nueva) — correcta"
+    if key.startswith("sb_publishable_"):
+        return "publishable (PÚBLICA) — INCORRECTA, usa la secret key"
+    if key.startswith("eyJ"):
+        return "JWT (anon o service_role) — verifica que sea service_role"
+    return "formato desconocido"
+
+
 def aplicar_a_modulo(datos, data: dict) -> None:
     """Sobreescribe en memoria los atributos del módulo de datos (BD_sanoviv)
     y recomputa los helpers derivados, replicando el final de BD_sanoviv.py.
