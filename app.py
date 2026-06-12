@@ -2568,49 +2568,38 @@ if st.session_state.admin_mode:
             finally:
                 st.session_state.confirmar_guardado = False
 
+        @st.dialog("Confirm Save")
+        def _dialogo_confirmar_guardado():
+            st.markdown(
+                "You are about to permanently save changes to the activity catalog, "
+                "treatment programs, professional resources, and physical resources.\n\n"
+                "**This action cannot be undone.** Are you sure you want to continue?"
+            )
+            _dc1, _dc2 = st.columns(2)
+            with _dc1:
+                # Dentro del modal no hay data_editor compitiendo por el clic,
+                # así que el botón responde al primer toque.
+                if st.button("Yes, Save Changes", type="primary",
+                             use_container_width=True, key="dlg_yes_save"):
+                    _ejecutar_guardado()
+                    st.rerun()
+            with _dc2:
+                if st.button("Cancel", use_container_width=True, key="dlg_cancel_save"):
+                    st.session_state.confirmar_guardado = False
+                    st.rerun()
+
         col_save1, col_save2, col_save3 = st.columns([1, 2, 1])
+        with col_save2:
+            st.button(
+                "Save All Changes",
+                type="primary",
+                use_container_width=True,
+                on_click=_solicitar_confirmacion,
+            )
 
-        if not st.session_state.confirmar_guardado:
-            with col_save2:
-                st.button(
-                    "Save All Changes",
-                    type="primary",
-                    use_container_width=True,
-                    on_click=_solicitar_confirmacion,
-                )
-        else:
-            st.markdown("""
-            <div style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border: 2px solid #F59E0B; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem;">
-                <div style="display: flex; align-items: flex-start; gap: 12px;">
-                    <span style="font-size: 1.75rem;">⚠️</span>
-                    <div>
-                        <strong style="color: #92400E; font-size: 1.1rem;">Confirm Save</strong><br>
-                        <span style="color: #78350F; font-size: 0.95rem;">
-                            You are about to permanently save changes to the activity catalog,
-                            treatment programs, professional resources, and physical resources.<br>
-                            <strong>This action cannot be undone.</strong> Are you sure you want to continue?
-                        </span>
-                    </div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            col_confirm, col_cancel = st.columns(2)
-
-            with col_confirm:
-                st.button(
-                    "Yes, Save Changes",
-                    type="primary",
-                    use_container_width=True,
-                    on_click=_ejecutar_guardado,
-                )
-
-            with col_cancel:
-                st.button(
-                    "Cancel",
-                    use_container_width=True,
-                    on_click=lambda: st.session_state.update(confirmar_guardado=False),
-                )
+        # Abrir el modal de confirmación cuando la validación pasó.
+        if st.session_state.confirmar_guardado:
+            _dialogo_confirmar_guardado()
 
         st.markdown("<br>", unsafe_allow_html=True)
         st.info(
