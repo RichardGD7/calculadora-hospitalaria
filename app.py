@@ -11,6 +11,7 @@ import importlib
 import numpy as np
 from optimizador_v2 import obtener_datos_base, ejecutar_optimizacion, verificar_admision, verificar_admision_semana, construir_modelo_datos_semana
 import BD_sanoviv as datos
+import persistencia
 
 
 # =====================================================
@@ -619,6 +620,17 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
+# === APLICAR OVERRIDES PERSISTENTES (Supabase) — parche temporal ===
+# Si hay datos guardados por el admin en Supabase, se aplican en memoria sobre
+# los defaults de BD_sanoviv.py ANTES de construir el modelo. A prueba de caídas:
+# si no está configurado o falla la red, se usan los valores por defecto.
+_overrides = persistencia.cargar_overrides_cached()
+if _overrides:
+    try:
+        persistencia.aplicar_a_modulo(datos, _overrides)
+    except Exception as _e:
+        st.warning(f"No se pudieron aplicar los datos guardados; se usan los valores por defecto. ({_e})")
+
 # === CARGAR DATOS ===
 datos_base = obtener_datos_base()
 
@@ -628,8 +640,13 @@ _nombres = datos_base["nombre_programas"]
 indices_base = [i for i, n in enumerate(_nombres) if _programas_dict[n].get("tipo") == "programa"]
 indices_ext = [i for i, n in enumerate(_nombres) if _programas_dict[n].get("tipo") == "extension"]
 
-# Contraseña de administrador
-ADMIN_PASSWORD = "AdminSanoviv2026"
+# Contraseña de administrador — se lee de los secrets de Streamlit.
+# El fallback es solo para desarrollo local; en producción DEBE definirse
+# ADMIN_PASSWORD en los secrets para que la contraseña real no quede en el repo.
+try:
+    ADMIN_PASSWORD = st.secrets["ADMIN_PASSWORD"]
+except Exception:
+    ADMIN_PASSWORD = "changeme-local-dev"
 
 # Inicializar estado de sesión
 if "pacientes_actuales" not in st.session_state:
@@ -2519,6 +2536,28 @@ if st.session_state.admin_mode:
                         st.session_state.confirmar_guardado = False
                         # Hot-reload BD_sanoviv
                         importlib.reload(datos)
+                        # Persistencia durable (Supabase) — parche temporal.
+                        # Guarda el snapshot canónico ya hidratado/validado, para
+                        # que al reiniciar la app cargue exactamente este estado.
+                        if persistencia.esta_configurado():
+                            _ok = persistencia.guardar_overrides({
+                                "programas":              datos.programas,
+                                "recursos_profesionales": datos.recursos_profesionales,
+                                "recursos_fisicos":       datos.recursos_fisicos,
+                                "catalogo_actividades":   datos.catalogo_actividades,
+                            })
+                            persistencia.limpiar_cache()
+                            if not _ok:
+                                st.warning(
+                                    "Los cambios se aplicaron en esta sesión, pero NO se pudieron "
+                                    "guardar de forma permanente (Supabase no respondió). Se perderán "
+                                    "al reiniciarse la app. Revisa la conexión e inténtalo de nuevo."
+                                )
+                        else:
+                            st.warning(
+                                "Persistencia no configurada: los cambios se aplicaron en esta sesión "
+                                "pero NO son permanentes. Define SUPABASE_URL y SUPABASE_KEY en los secrets."
+                            )
                         # Limpiar datos de admin para recargar desde archivo
                         for key in ["admin_programas", "admin_recursos_prof", "admin_recursos_fis", "admin_catalogo"]:
                             if key in st.session_state:
